@@ -1,0 +1,86 @@
+name: Windows tests
+
+on:
+  push:
+    branches:
+      - main
+      - ci/windows-tests
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    name: Windows x64 regression
+    runs-on: windows-2022
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check test prerequisites
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $compiler = Join-Path $env:SystemRoot 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+          if (-not (Test-Path -LiteralPath $compiler)) { throw '.NET Framework x64 compiler not found.' }
+          node --version
+          if ($LASTEXITCODE -ne 0) { throw 'Node.js not found.' }
+          New-Item -ItemType Directory -Path work -Force | Out-Null
+
+      - name: Fetch and verify the pinned engine
+        run: ./scripts/Fetch-Engine.ps1
+
+      - name: Build production executable
+        run: |
+          & ./Build.cmd
+          exit $LASTEXITCODE
+
+      - name: Run complete C# regression suite
+        id: csharp
+        run: |
+          & ./Test.cmd
+          exit $LASTEXITCODE
+
+      - name: Test attachment download bridge
+        if: ${{ !cancelled() }}
+        run: |
+          & node tests/attachment-download.test.cjs 2>&1 | Tee-Object -FilePath work/attachment-download-results.txt
+          exit $LASTEXITCODE
+
+      - name: Test generated external wrapper
+        if: ${{ !cancelled() && steps.csharp.outcome == 'success' }}
+        run: |
+          & node tests/external-wrapper.test.cjs 2>&1 | Tee-Object -FilePath work/external-wrapper-results.txt
+          exit $LASTEXITCODE
+
+      - name: Test shortcut transactions with synthetic files
+        if: ${{ !cancelled() }}
+        run: |
+          & ./tests/shortcuts/Run.cmd 2>&1 | Tee-Object -FilePath work/shortcut-results.txt
+          exit $LASTEXITCODE
+
+      - name: Save test reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-test-reports-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            work/offline-test-results.txt
+            work/attachment-download-results.txt
+            work/external-wrapper-results.txt
+            work/shortcut-results.txt
+          if-no-files-found: warn
+          retention-days: 7

@@ -17,6 +17,12 @@ node tests/external-wrapper.test.cjs
 
 Windows bir üretilmiş test EXE'sini engellerse bunu tam test başarısı olarak raporlamayın. Hangi grubun çalışmadığını ve kalan kontrolleri PR'da belirtin; Windows güvenlik ayarlarını değiştiren veya engeli aşan kod eklemeyin.
 
+### GitHub üzerinde Windows testleri
+
+`Windows tests` iş akışı, GitHub'ın ayrı Windows x64 ortamında aynı derleme ve test sırasını çalıştırır. `main` ve `ci/windows-tests` dallarına push yapıldığında, `main` hedefli PR'larda ve Actions sayfasından elle başlatıldığında çalışır. C# testleri tamamlanmazsa iş akışı başarısız kalır; bağımsız JavaScript ve kısayol kontrolleri mümkün olduğunda yine sonuç verir.
+
+İş akışında depo erişimi salt okunurdur, kişisel secret gerekmez ve güvenlik politikası değiştirilmez. Motor indirilip sabit hash ile doğrulanır; Discord veya motor başlatılmaz. Yalnız test raporları yedi gün saklanır; üretilmiş EXE'ler, sentetik profiller ve diğer `work/` dosyaları artifact'e eklenmez. Bu kontroller gerçek hesapla mesaj, indirme, yayın veya yeniden başlatma denemesinin yerini tutmaz.
+
 ## Ekip çalışma akışı
 
 `main` üzerinden kendi iş dalınızı açın:
