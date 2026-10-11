@@ -20,21 +20,31 @@ namespace DiscordAccess
         private static void Require(bool condition, string message)
         { if (!condition) throw new InvalidOperationException("Proxy transport: " + message); }
 
-        private static void ReadHeader(NetworkStream stream)
+        private static async Task ReadHeaderAsync(NetworkStream stream)
         {
-            int state = 0, total = 0;
+            int state = 0, total = 0; var single = new byte[1];
             while (state < 4 && total++ < 16384)
             {
-                int next = stream.ReadByte(); if (next < 0) throw new IOException("Fixture header ended.");
+                if (await stream.ReadAsync(single, 0, 1).ConfigureAwait(false) == 0) throw new IOException("Fixture header ended.");
+                int next = single[0];
                 if ((state == 0 || state == 2) && next == 13 || (state == 1 || state == 3) && next == 10) state++;
                 else state = next == 13 ? 1 : 0;
             }
             if (state != 4) throw new IOException("Fixture header too large.");
         }
-        private static bool ReadPayload(NetworkStream stream)
+        private static async Task<int> ReadByteAsync(NetworkStream stream)
+        {
+            var single = new byte[1];
+            return await stream.ReadAsync(single, 0, 1).ConfigureAwait(false) == 0 ? -1 : single[0];
+        }
+        private static async Task<bool> ReadPayloadAsync(NetworkStream stream)
         {
             var bytes = new byte[Payload.Length]; int count = 0;
-            while (count < bytes.Length) { int n = stream.Read(bytes, count, bytes.Length - count); if (n == 0) return false; count += n; }
+            while (count < bytes.Length)
+            {
+                int n = await stream.ReadAsync(bytes, count, bytes.Length - count).ConfigureAwait(false);
+                if (n == 0) return false; count += n;
+            }
             for (int i = 0; i < bytes.Length; i++) if (bytes[i] != Payload[i]) return false;
             return true;
         }
@@ -47,46 +57,56 @@ namespace DiscordAccess
             while (true)
             {
                 TcpClient client = listener.AcceptTcpClient();
-                ThreadPool.QueueUserWorkItem(delegate
-                {
-                    using (client)
-                    {
-                        try
-                        {
-                            var stream = client.GetStream(); ReadHeader(stream);
-                            byte[] header = Encoding.ASCII.GetBytes("HTTP/1.1 200 Connection Established\r\n\r\n");
-                            stream.Write(header, 0, header.Length);
-                            int mode = stream.ReadByte();
-                            if (mode == 'S')
-                            {
-                                stream.Write(new byte[1024], 0, 1024);
-                                client.Client.Shutdown(SocketShutdown.Send);
-                                if (ReadPayload(stream)) File.WriteAllText(Path.Combine(fixture, "server-half.received"), "received");
-                                return;
-                            }
-                            if (!ReadPayload(stream)) return;
-                            if (mode == 'F')
-                            {
-                                // Close the socket before TcpClient/NetworkStream
-                                // disposal can perform a graceful shutdown.
-                                client.Client.LingerState = new LingerOption(true, 0);
-                                client.Client.Close(0);
-                                return;
-                            }
-                            if (mode == 'C' || mode == 'H')
-                            {
-                                if (stream.ReadByte() != -1) return;
-                            }
-                            if (mode == 'H' || mode == 'K') { Thread.Sleep(10000); return; }
-                            Thread.Sleep(50);
-                            byte[] body = new byte[ReplySize];
-                            for (int i = 0; i < body.Length; i++) body[i] = (byte)(i % 251);
-                            stream.Write(body, 0, body.Length);
-                        }
-                        catch { }
-                    }
-                });
+                // Keep acceptance on this fixture server thread. Per-client
+                // work must not block pool threads needed by the actual gate.
+                Task serving = ServeClientAsync(client, fixture);
             }
+        }
+        private static async Task ServeClientAsync(TcpClient client, string fixture)
+        {
+            try
+            {
+                var stream = client.GetStream(); await ReadHeaderAsync(stream).ConfigureAwait(false);
+                byte[] header = Encoding.ASCII.GetBytes("HTTP/1.1 200 Connection Established\r\n\r\n");
+                await stream.WriteAsync(header, 0, header.Length).ConfigureAwait(false);
+                int mode = await ReadByteAsync(stream).ConfigureAwait(false);
+                if (mode == 'S')
+                {
+                    await stream.WriteAsync(new byte[1024], 0, 1024).ConfigureAwait(false);
+                    client.Client.Shutdown(SocketShutdown.Send);
+                    if (await ReadPayloadAsync(stream).ConfigureAwait(false))
+                    {
+                        using (var marker = new FileStream(Path.Combine(fixture, "server-half.received"),
+                            FileMode.Create, FileAccess.Write, FileShare.Read, 4096, true))
+                        {
+                            byte[] received = Encoding.ASCII.GetBytes("received");
+                            await marker.WriteAsync(received, 0, received.Length).ConfigureAwait(false);
+                            await marker.FlushAsync().ConfigureAwait(false);
+                        }
+                    }
+                    return;
+                }
+                if (!await ReadPayloadAsync(stream).ConfigureAwait(false)) return;
+                if (mode == 'F')
+                {
+                    // Close the socket before TcpClient/NetworkStream
+                    // disposal can perform a graceful shutdown.
+                    client.Client.LingerState = new LingerOption(true, 0);
+                    client.Client.Close(0);
+                    return;
+                }
+                if (mode == 'C' || mode == 'H')
+                {
+                    if (await ReadByteAsync(stream).ConfigureAwait(false) != -1) return;
+                }
+                if (mode == 'H' || mode == 'K') { await Task.Delay(10000).ConfigureAwait(false); return; }
+                await Task.Delay(50).ConfigureAwait(false);
+                byte[] body = new byte[ReplySize];
+                for (int i = 0; i < body.Length; i++) body[i] = (byte)(i % 251);
+                await stream.WriteAsync(body, 0, body.Length).ConfigureAwait(false);
+            }
+            catch { }
+            finally { try { client.Close(); } catch { } }
         }
 
         private static async Task<TcpClient> Open(int port, char mode)
@@ -99,8 +119,12 @@ namespace DiscordAccess
                 var stream = client.GetStream();
                 byte[] header = Encoding.ASCII.GetBytes("CONNECT discord.com:443 HTTP/1.1\r\nHost: discord.com:443\r\n\r\n");
                 await stream.WriteAsync(header, 0, header.Length).ConfigureAwait(false);
-                ReadHeader(stream);
-                stream.WriteByte((byte)mode);
+                // ReceiveTimeout does not bound ReadAsync on this runtime.
+                // Preserve the five-second header limit by closing the socket.
+                using (var headerDeadline = new CancellationTokenSource(5000))
+                using (headerDeadline.Token.Register(client.Close))
+                    await ReadHeaderAsync(stream).ConfigureAwait(false);
+                await stream.WriteAsync(new[] { (byte)mode }, 0, 1).ConfigureAwait(false);
                 if (mode != 'S') await stream.WriteAsync(Payload, 0, Payload.Length).ConfigureAwait(false);
                 return client;
             }
