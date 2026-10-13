@@ -924,5 +924,3 @@ def collect_payloads(repo: Path, build_evidence: Path, manifest_path: Path, vers
                                    "changed_files": proof["changed_files"], "role": "Complete successfully built main source, exact locks, overlay, tests and notice"},
                "current_build_evidence": primary, "historical_build_evidence": historical}
     return payloads, details
-
-
