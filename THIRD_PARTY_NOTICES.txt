@@ -28,6 +28,15 @@ licenses/engine-source-manifest.json
 Manifestteki kaynak arşivleri tam sürümleri ve modül kaynaklarını belirtir.
 Ek bildirimler aşağıdaki ana GPL metninin veya upstream bildirimlerinin yerini almaz.
 
+Motora gömülü Wintun 0.14.1 DLL'si ve WireGuard Go yükleyici/bellek modülü
+ayrı lisans koşullarına sahiptir. Orijinal DLL koşulları:
+licenses/WINTUN-PREBUILT-BINARIES-LICENSE.txt
+Yükleyici kodunun korunmuş WireGuard telifi ve tam MIT izin metni:
+licenses/WIREGUARD-MIT.txt
+Resmi Wintun arşivi, kaynak paketinde korunan dört DLL'nin SHA-256 değerleri
+ve motora gömülü amd64 DLL'nin bayt eşleşmesi, yukarıdaki manifestin
+native_components alanında doğrulanır. Bu iki metin ek bildirimlere de dahildir.
+
 Discord uygulaması bu pakette dağıtılmaz. Kullanıcının mevcut resmi kurulumu
 kullanılır; Discord'un kendi koşulları geçerlidir. Windows/.NET Framework
 sistem bileşenleridir ve pakette dağıtılmaz. Bu bildirim DiscordAccess'in

@@ -7,9 +7,24 @@ REPO = Path(__file__).resolve().parent.parent
 OUT = REPO / 'licenses'
 CACHE = REPO / 'work' / 'license-source-cache'
 EXPECTED_EXE = None
+OFFLINE = False
 TAG = 'v1.14.3-discordaccess.2'
 COMMIT = '7054cac5124465ffdb145870d7c01885566711b1'
 SOURCE_SHA256 = 'cd8a3508f36d74ef7c9c515bdc8586f048fd06c22499d38ee3787faa7d220f74'
+WINTUN_URL = 'https://www.wintun.net/builds/wintun-0.14.1.zip'
+WINTUN_SHA256 = '07c256185d6ee3652e09fa55c0b673e2624b565e02c4b9091c79ca7d2f24ef51'
+WINTUN_BYTES = 750540
+WINTUN_LICENSE_SHA256 = '183adac21e7d96c508c8fd34d394b7b6708bc81564ad1bad61ab66143a008cd2'
+WIREGUARD_LICENSE_COMMIT = '0fa3db229ce2036ae779de8ba03d336b7aa826bd'
+WIREGUARD_LICENSE_URL = 'https://git.zx2c4.com/wintun-go/plain/LICENSE?id=' + WIREGUARD_LICENSE_COMMIT
+WIREGUARD_LICENSE_SHA256 = '91276db973f25602d1aa43491f59cbc84cb88e6f151e1d0cc82a755563ce0195'
+WIREGUARD_COPYRIGHT = 'Copyright (C) 2017-2021 WireGuard LLC. All Rights Reserved.'
+WINTUN_FILES = {
+    'amd64': (427552, 'e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce'),
+    'arm': (364552, 'daad267411ecdc70a0535e274d2c3e9da3d0084bdac7662cb8424dd4a031b4d9'),
+    'arm64': (222488, 'f7ba89005544be9d85231a9e0d5f23b2d15b3311667e2dad0debd344918a3f80'),
+    'x86': (550928, 'd694fa46ab4cfebcb2632d094c7aa97278eef2f8052438621766d863ae98a931'),
+}
 LEGAL = re.compile(r'^(?:licen[cs]e|copying|notice|copyright|authors|patents)(?:[._-].*)?$', re.I)
 CODE_EXT = {'.go', '.c', '.cc', '.cpp', '.h', '.cs', '.py', '.js', '.ts', '.exe', '.dll', '.sys', '.png', '.jpg', '.gif', '.woff', '.woff2'}
 
@@ -18,19 +33,22 @@ def sha(data):
 
 def checked_path(path):
     resolved = path.resolve()
-    if not resolved.is_relative_to(REPO.resolve()):
-        raise ValueError('Collection output escaped repository')
-    for ancestor in (path, *path.parents):
-        if ancestor == REPO.parent:
-            break
-        if ancestor.is_symlink():
-            raise ValueError('Collection output contains symbolic link')
-    return path
+    for root in (REPO, CACHE):
+        if resolved.is_relative_to(root.resolve()):
+            for ancestor in (path, *path.parents):
+                if ancestor == root.parent:
+                    break
+                if ancestor.is_symlink():
+                    raise ValueError('Collection output contains symbolic link')
+            return path
+    raise ValueError('Collection output escaped repository or explicit source cache')
 
 def download(url, cache_name):
     dest = checked_path(CACHE / cache_name)
     if dest.exists():
         return dest.read_bytes()
+    if OFFLINE:
+        raise RuntimeError('Source is not cached for offline collection: ' + cache_name)
     last = None
     for attempt in range(3):
         try:
@@ -209,12 +227,101 @@ def collect_go(version):
                 result['notices'].append(notice_record(version, relative, stream.read()))
     return result
 
+def collect_native(results, engine, settings):
+    """Bind the separately licensed DLL and Go loader to verified source bytes."""
+    matches = [result for result in results if result['module'] == 'github.com/sagernet/sing-tun']
+    if len(matches) != 1 or matches[0]['errors']:
+        raise ValueError('Native attribution requires the verified sing-tun module')
+    module = matches[0]
+    raw_module = download(module['source_url'], module['component_id'] + '.zip')
+    if sha(raw_module) != module['source_archive_sha256']:
+        raise ValueError('Native attribution module archive changed after Go h1 verification')
+    raw_native = download(WINTUN_URL, 'wintun-0.14.1.zip')
+    if len(raw_native) != WINTUN_BYTES or sha(raw_native) != WINTUN_SHA256:
+        raise ValueError('Wintun archive differs from the official pinned release')
+    permission = download(WIREGUARD_LICENSE_URL, 'wireguard-wintun-go-0fa3db229ce2-LICENSE.txt')
+    if len(permission) != 1023 or sha(permission) != WIREGUARD_LICENSE_SHA256:
+        raise ValueError('WireGuard MIT permission text differs from the pinned official source')
+    if settings.get('GOOS') != 'windows' or settings.get('GOARCH') not in ('amd64', 'arm', 'arm64', '386'):
+        raise ValueError('Native attribution expects the supported Windows engine architecture')
+    runtime_architecture = 'x86' if settings['GOARCH'] == '386' else settings['GOARCH']
+    prefix = module['module'] + '@' + module['version'] + '/'
+    native_files, code_files = [], []
+    with zipfile.ZipFile(io.BytesIO(raw_native)) as native, zipfile.ZipFile(io.BytesIO(raw_module)) as source:
+        if len(native.namelist()) != len(set(native.namelist())):
+            raise ValueError('Duplicate paths in official native archive')
+        binary_license = native.read('wintun/LICENSE.txt')
+        if len(binary_license) != 5431 or sha(binary_license) != WINTUN_LICENSE_SHA256:
+            raise ValueError('Wintun binary terms differ from the official archive license')
+        if b'DLL version: 0.14.1' not in source.read(prefix + 'internal/wintun/README.md'):
+            raise ValueError('Vendored Wintun version differs from the pinned native release')
+        for architecture, (expected_bytes, expected_sha256) in WINTUN_FILES.items():
+            archive_path = 'wintun/bin/' + architecture + '/wintun.dll'
+            module_path = 'internal/wintun/' + architecture + '/wintun.dll'
+            dll = native.read(archive_path)
+            if len(dll) != expected_bytes or sha(dll) != expected_sha256 or source.read(prefix + module_path) != dll:
+                raise ValueError('Vendored DLL differs from official Wintun release: ' + architecture)
+            embedded = architecture == runtime_architecture
+            offset = engine.find(dll) if embedded else None
+            if embedded:
+                embed_path = 'internal/wintun/dll_windows_' + settings['GOARCH'] + '.go'
+                if ('//go:embed ' + architecture + '/wintun.dll').encode() not in source.read(prefix + embed_path):
+                    raise ValueError('Wintun embedding declaration differs from the reviewed architecture')
+                if offset < 0 or engine.find(dll, offset + 1) >= 0:
+                    raise ValueError('Official runtime Wintun DLL was not uniquely located in the engine')
+            native_files.append({'architecture': architecture, 'archive_path': archive_path,
+                                 'module': module['module'], 'module_archive_path': module_path,
+                                 'sha256': expected_sha256, 'bytes': expected_bytes,
+                                 'runtime_embedded': embedded, 'runtime_embedded_offset': offset})
+        for entry in sorted(source.infolist(), key=lambda item: item.filename):
+            relative = entry.filename.removeprefix(prefix)
+            if not relative.startswith('internal/wintun/') or not relative.endswith('.go'):
+                continue
+            code = source.read(entry)
+            if b'SPDX-License-Identifier: MIT' not in code:
+                continue
+            if WIREGUARD_COPYRIGHT.encode() not in code:
+                raise ValueError('MIT loader copyright requires review: ' + relative)
+            code_files.append({'archive_path': relative, 'sha256': sha(code), 'bytes': len(code),
+                               'license': 'MIT', 'copyright': WIREGUARD_COPYRIGHT})
+    if len(code_files) != 17:
+        raise ValueError('The pinned MIT loader/memory-module source inventory changed')
+    loader_license = (WIREGUARD_COPYRIGHT + '\n\n').encode() + permission
+    license_payloads = [
+        ('licenses/WINTUN-PREBUILT-BINARIES-LICENSE.txt', 'wintun/LICENSE.txt', binary_license, WINTUN_URL),
+        ('licenses/WIREGUARD-MIT.txt', None, loader_license, WIREGUARD_LICENSE_URL),
+    ]
+    notices = []
+    for repository_path, archive_path, payload, source_url in license_payloads:
+        checked_path(REPO / repository_path).write_bytes(payload)
+        notice = notice_record('wintun-0.14.1', archive_path or repository_path, payload)
+        notice.update({'repository_path': repository_path, 'archive_path': archive_path, 'source_url': source_url})
+        if archive_path is None:
+            notice.update({'source_sha256': WIREGUARD_LICENSE_SHA256, 'source_bytes': len(permission),
+                           'upstream_commit': WIREGUARD_LICENSE_COMMIT,
+                           'copyright_source_module': module['module'], 'copyright_source_version': module['version'],
+                           'copyright_source_archive_path': 'internal/wintun/dll_windows_amd64.go',
+                           'composition': 'Exact retained WireGuard copyright, two LF bytes, then the unchanged official MIT permission text.'})
+        notices.append(notice)
+    return [{'component_id': 'wintun-0.14.1', 'name': 'Wintun prebuilt DLLs and WireGuard Go loader notices',
+             'version': '0.14.1', 'source_url': WINTUN_URL, 'source_archive_sha256': WINTUN_SHA256,
+             'source_archive_bytes': len(raw_native), 'cache_filename': 'wintun-0.14.1.zip',
+             'module': module['module'], 'module_version': module['version'],
+             'module_component_id': module['component_id'], 'module_archive_sha256': sha(raw_module),
+             'files': native_files, 'embedded_code_files': code_files, 'notices': notices,
+             'scope': 'All four DLLs are preserved in the corresponding sing-tun source archive; only the engine architecture is embedded in this runtime. The Go loader/memory-module MIT notice is separate from the prebuilt DLL terms.'}]
+
 def main():
-    global EXPECTED_EXE
+    global EXPECTED_EXE, CACHE, OFFLINE
     parser = argparse.ArgumentParser()
     parser.add_argument('--engine', required=True)
     parser.add_argument('--expected-sha256', required=True)
+    parser.add_argument('--cache-dir', type=Path, help='Source cache directory; defaults to work/license-source-cache in this checkout')
+    parser.add_argument('--offline', action='store_true', help='Require every pinned source and license to exist in the source cache')
     args = parser.parse_args()
+    if args.cache_dir is not None:
+        CACHE = args.cache_dir.resolve()
+    OFFLINE = args.offline
     if not re.fullmatch(r'[0-9a-fA-F]{64}', args.expected_sha256):
         raise ValueError('A reviewed engine SHA256 is required')
     EXPECTED_EXE = args.expected_sha256.lower()
@@ -241,6 +348,7 @@ def main():
         except Exception as ex:
             results.append({'module': 'sing-box source' if argument is None else 'Go runtime', 'version': TAG if argument is None else go_version,
                             'notices': [], 'errors': [str(ex)]})
+    native_components = collect_native(results, data, settings)
     patch_path = 'engine-patches/http-limits/manifest.json'
     patch_bytes = (REPO / patch_path).read_bytes()
     patch = json.loads(patch_bytes)
@@ -257,6 +365,7 @@ def main():
                  'Original notice contents are reproduced below; archive paths identify their scope.',
                  'Including source/test/platform notices is conservative and does not imply that every file is linked or used.',
                  'The JSON manifest records source URLs, versions, SHA256, and verified Go h1 content hashes.',
+                 'Separately licensed Wintun DLLs and WireGuard Go loader notices are recorded in native_components.',
                  'Hash-pinned main-source HTTP limits, dependency locks and build instructions accompany this build.',
                  'No source, dependency, build script, driver or program was executed during notice collection.', '',
                  'Reviewed main-source modifications notice (provided by the overlay, not an upstream archive file):',
@@ -271,6 +380,14 @@ def main():
             aggregate += ['--- BEGIN NOTICE ' + notice['aggregate_marker'] + ' ---',
                           'Archive path: ' + notice['archive_path'], 'Original file SHA256: ' + notice['sha256'],
                           '', notice.pop('_text'), '--- END NOTICE ' + notice['aggregate_marker'] + ' ---', '']
+    native_count = 0
+    for component in native_components:
+        aggregate += ['=' * 78, component['name'] + ' ' + component['version'], 'Source: ' + component['source_url'], '']
+        for notice in component['notices']:
+            native_count += 1
+            aggregate += ['--- BEGIN NATIVE NOTICE ' + notice['aggregate_marker'] + ' ---',
+                          'Repository path: ' + notice['repository_path'], 'Notice file SHA256: ' + notice['sha256'],
+                          '', notice.pop('_text'), '--- END NATIVE NOTICE ' + notice['aggregate_marker'] + ' ---', '']
     (OUT / 'ENGINE-THIRD-PARTY-NOTICES.txt').write_text('\n'.join(aggregate), encoding='utf-8', newline='\n')
     manifest = {'schema': 1, 'engine_version': TAG, 'engine_sha256': EXPECTED_EXE, 'engine_bytes': len(data),
                 'go_version': go_version, 'build_settings': settings, 'main_source_commit': COMMIT,
@@ -282,13 +399,16 @@ def main():
                                  'patch_files': patch['files'],
                                  'note': 'These exact main-source HTTP limits, dependency locks and build options produce the custom engine. Corresponding modified sources, tests and upstream notices must accompany binary distribution.'},
                 'module_count': len(modules), 'notice_count': count,
+                'native_notice_count': native_count, 'total_notice_count': count + native_count,
                 'notice_format': 'Each aggregate_marker identifies its BEGIN/END block in ENGINE-THIRD-PARTY-NOTICES.txt. Notice text is UTF-8, omitting a leading UTF-8 BOM if present. Original archive-file SHA256 and aggregate-text SHA256 are both retained. No separate notice text files are required.',
                 'hash_algorithm_reference': 'https://go.dev/src/golang.org/x/mod/sumdb/dirhash/hash.go',
-                'scope': 'All legal notice filenames found in exact source archives, conservatively including source/tests/platform files. No claim of legal opinion or complete package-level attribution.',
-                'components': results}
+                'scope': 'All legal notice filenames found in exact source archives, conservatively including source/tests/platform files, plus verified prebuilt Wintun and WireGuard MIT loader notices. No claim of legal opinion or complete package-level attribution.',
+                'components': results, 'native_components': native_components}
     (OUT / 'engine-source-manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
     unresolved = [result for result in results if result['errors']]
-    print(json.dumps({'components': len(results), 'modules': len(modules), 'notices': count, 'unresolved': [{'module': r['module'], 'version': r['version'], 'errors': r['errors']} for r in unresolved]}, ensure_ascii=False), flush=True)
+    print(json.dumps({'components': len(results), 'modules': len(modules), 'notices': count,
+                      'native_components': len(native_components), 'native_notices': native_count,
+                      'unresolved': [{'module': r['module'], 'version': r['version'], 'errors': r['errors']} for r in unresolved]}, ensure_ascii=False), flush=True)
     return 1 if unresolved else 0
 
 if __name__ == '__main__':

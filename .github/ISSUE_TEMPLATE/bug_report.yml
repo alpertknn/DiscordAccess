@@ -1,0 +1,64 @@
+name: Hata bildirimi
+description: Kişisel veri paylaşmadan bir kullanım veya regresyon sorunu bildirin.
+title: "[Hata]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Güvenlik açığının ayrıntılarını bu forma yazmayın; önce [SECURITY.md](https://github.com/alpertknn/DiscordAccess/blob/main/SECURITY.md) politikasını okuyun.
+        Token, parola, profil, journal, .preserved yedek, ham log, gerçek kullanıcı yolu/IP veya imzalı indirme URL'si eklemeyin. Kısa hata kodu ve sentetik örnek yeterlidir.
+  - type: input
+    id: version
+    attributes:
+      label: DiscordAccess sürümü veya tam commit
+      placeholder: "Örnek: v4.21 hazır paket veya 40 karakterli commit"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows sürümü ve build
+      placeholder: "Örnek: Windows 11 x64, build numarası; kullanıcı adı yazmayın"
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Kullanılan akış
+      options:
+        - Hazır paket / tepsi
+        - Hazır paket / konsol
+        - Kaynaktan derleme veya test
+        - Önceki sürümden geçiş / geri alma
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Yeniden üretim adımları
+      description: Kısa adımlar yazın; gerçek dosya/hesap bağlantısı kullanmayın.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Beklenen ve gözlenen davranış
+    validations:
+      required: true
+  - type: input
+    id: error
+    attributes:
+      label: Kısa hata kodu veya temizlenmiş mesaj
+      description: Ham log veya kişisel yol yapıştırmayın. Kod yoksa "yok" yazın.
+  - type: textarea
+    id: checks
+    attributes:
+      label: İlgili kontrol sonuçları
+      description: Katkı/test sorunuysa komutları, kontrol edilen tam commit'i, geçen ve engellenen/atlanmış grupları belirtin. Çalışmayan test başarı değildir.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Gizlilik
+      options:
+        - label: Hassas veri, ham log veya gerçek kullanıcı yolu eklemedim; bu bir özel güvenlik raporu değil.
+          required: true

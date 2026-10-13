@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Güvenlik bildirimi / Security report
+    url: https://github.com/alpertknn/DiscordAccess/blob/main/SECURITY.md
+    about: Hassas bulguyu herkese açık issue'ya yazmadan önce özel bildirim politikasını okuyun.

@@ -88,9 +88,11 @@
   },
   "module_count": 63,
   "notice_count": 131,
+  "native_notice_count": 2,
+  "total_notice_count": 133,
   "notice_format": "Each aggregate_marker identifies its BEGIN/END block in ENGINE-THIRD-PARTY-NOTICES.txt. Notice text is UTF-8, omitting a leading UTF-8 BOM if present. Original archive-file SHA256 and aggregate-text SHA256 are both retained. No separate notice text files are required.",
   "hash_algorithm_reference": "https://go.dev/src/golang.org/x/mod/sumdb/dirhash/hash.go",
-  "scope": "All legal notice filenames found in exact source archives, conservatively including source/tests/platform files. No claim of legal opinion or complete package-level attribution.",
+  "scope": "All legal notice filenames found in exact source archives, conservatively including source/tests/platform files, plus verified prebuilt Wintun and WireGuard MIT loader notices. No claim of legal opinion or complete package-level attribution.",
   "components": [
     {
       "module": "github.com/ajg/form",
@@ -1981,6 +1983,214 @@
         }
       ],
       "errors": []
+    }
+  ],
+  "native_components": [
+    {
+      "component_id": "wintun-0.14.1",
+      "name": "Wintun prebuilt DLLs and WireGuard Go loader notices",
+      "version": "0.14.1",
+      "source_url": "https://www.wintun.net/builds/wintun-0.14.1.zip",
+      "source_archive_sha256": "07c256185d6ee3652e09fa55c0b673e2624b565e02c4b9091c79ca7d2f24ef51",
+      "source_archive_bytes": 750540,
+      "cache_filename": "wintun-0.14.1.zip",
+      "module": "github.com/sagernet/sing-tun",
+      "module_version": "v0.9.7-0.20261009020158-bca4bf029237",
+      "module_component_id": "301ea27c82b09d24eaf359f6",
+      "module_archive_sha256": "4f678effd40bc6da3916641cdfaa023b3aeef26d1cb21c0df0cf0ee69826ec93",
+      "files": [
+        {
+          "architecture": "amd64",
+          "archive_path": "wintun/bin/amd64/wintun.dll",
+          "module": "github.com/sagernet/sing-tun",
+          "module_archive_path": "internal/wintun/amd64/wintun.dll",
+          "sha256": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce",
+          "bytes": 427552,
+          "runtime_embedded": true,
+          "runtime_embedded_offset": 34586016
+        },
+        {
+          "architecture": "arm",
+          "archive_path": "wintun/bin/arm/wintun.dll",
+          "module": "github.com/sagernet/sing-tun",
+          "module_archive_path": "internal/wintun/arm/wintun.dll",
+          "sha256": "daad267411ecdc70a0535e274d2c3e9da3d0084bdac7662cb8424dd4a031b4d9",
+          "bytes": 364552,
+          "runtime_embedded": false,
+          "runtime_embedded_offset": null
+        },
+        {
+          "architecture": "arm64",
+          "archive_path": "wintun/bin/arm64/wintun.dll",
+          "module": "github.com/sagernet/sing-tun",
+          "module_archive_path": "internal/wintun/arm64/wintun.dll",
+          "sha256": "f7ba89005544be9d85231a9e0d5f23b2d15b3311667e2dad0debd344918a3f80",
+          "bytes": 222488,
+          "runtime_embedded": false,
+          "runtime_embedded_offset": null
+        },
+        {
+          "architecture": "x86",
+          "archive_path": "wintun/bin/x86/wintun.dll",
+          "module": "github.com/sagernet/sing-tun",
+          "module_archive_path": "internal/wintun/x86/wintun.dll",
+          "sha256": "d694fa46ab4cfebcb2632d094c7aa97278eef2f8052438621766d863ae98a931",
+          "bytes": 550928,
+          "runtime_embedded": false,
+          "runtime_embedded_offset": null
+        }
+      ],
+      "embedded_code_files": [
+        {
+          "archive_path": "internal/wintun/dll_windows.go",
+          "sha256": "1a332593019fe17c3d929672cd1e37236c1be88efbafe2cbdcbfcf8e3e615c36",
+          "bytes": 1891,
+          "license": "MIT",
+          "copyright": "Copyright (C) 2017-2021 WireGuard LLC. All Rights Reserved."
+        },
+        {
+          "archive_path": "internal/wintun/dll_windows_386.go",
+          "sha256": "cffa15ebcb0265a1cfbbaf2a16f9ae433e18647283e20f922feea6a9372301d5",
+          "bytes": 190,
+          "license": "MIT",
+          "copyright": "Copyright (C) 2017-2021 WireGuard LLC. All Rights Reserved."
+        },
+        {
+          "archive_path": "internal/wintun/dll_windows_amd64.go",
+          "sha256": "2510bebfe4eabfdbeddaeece4ed91b53d84950108af6432b8e1c39cef33d1c83",
+          "bytes": 192,
+          "license": "MIT",
+          "copyright": "Copyright (C) 2017-2021 WireGuard LLC. All Rights Reserved."
+        },
+        {
+          "archive_path": "internal/wintun/dll_windows_arm.go",
+          "sha256": "49ea1b2157c7f577f0a3648afaaae4d34dccf66849cfb1135ece82b78f62c656",
+          "bytes": 190,
+          "license": "MIT",
+          "copyright": "Copyright (C) 2017-2021 WireGuard LLC. All Rights Reserved."
+        },
+        {
+          "archive_path": "internal/wintun/dll_windows_arm64.go",
+          "sha256": "48597e59944801a0bdb22cf919253b0bf5833963915503907ab7434fdb6bb2a1",
+          "bytes": 192,
+          "license": "MIT",
+          "copyright": "Copyright (C) 2017-2021 WireGuard LLC. All Rights Reserved."
+        },
+        {
+          "archive_path": "internal/wintun/memmod/memmod_windows.go",
+          "sha256": "9a44e7e4023f7a9c8a08b3f8a215f5c267619d5be7f66d4799ebad0dc9ccb3b3",
+          "bytes": 26421,
+          "license": "MIT",
+          "copyright": "Copyright (C) 2017-2021 WireGuard LLC. All Rights Reserved."
+        },
+        {
+          "archive_path": "internal/wintun/memmod/memmod_windows_32.go",
+          "sha256": "f5dfbda39decda2491edc0075d0b2f68d24946e2519bbeb7f414d454556b94bc",
+          "bytes": 333,
+          "license": "MIT",
+          "copyright": "Copyright (C) 2017-2021 WireGuard LLC. All Rights Reserved."
+        },
+        {
+          "archive_path": "internal/wintun/memmod/memmod_windows_386.go",
+          "sha256": "5ecf7a033d81a78866b24e4fc5eea8a38bb8184fa7e28fe927a8868920eb8857",
+          "bytes": 168,
+          "license": "MIT",
+          "copyright": "Copyright (C) 2017-2021 WireGuard LLC. All Rights Reserved."
+        },
+        {
+          "archive_path": "internal/wintun/memmod/memmod_windows_64.go",
+          "sha256": "3a193bd70b491fddaf151eb9627fb6fe860599f4697277a63f6a098be3bcb91c",
+          "bytes": 857,
+          "license": "MIT",
+          "copyright": "Copyright (C) 2017-2021 WireGuard LLC. All Rights Reserved."
+        },
+        {
+          "archive_path": "internal/wintun/memmod/memmod_windows_amd64.go",
+          "sha256": "0e8e4864a554a907e7f28916796ad3bac915a032bfc1391686d16b57f32e86f3",
+          "bytes": 169,
+          "license": "MIT",
+          "copyright": "Copyright (C) 2017-2021 WireGuard LLC. All Rights Reserved."
+        },
+        {
+          "archive_path": "internal/wintun/memmod/memmod_windows_arm.go",
+          "sha256": "07fa0e4cc17688f40b39ab85350e0cf4112a777c759e73eb7f0197fb9121f601",
+          "bytes": 169,
+          "license": "MIT",
+          "copyright": "Copyright (C) 2017-2021 WireGuard LLC. All Rights Reserved."
+        },
+        {
+          "archive_path": "internal/wintun/memmod/memmod_windows_arm64.go",
+          "sha256": "9669c70c1890fa9316f1bd0c51fbe43c87b1f36adeeff220d6390fce9fe2276a",
+          "bytes": 169,
+          "license": "MIT",
+          "copyright": "Copyright (C) 2017-2021 WireGuard LLC. All Rights Reserved."
+        },
+        {
+          "archive_path": "internal/wintun/memmod/syscall_windows.go",
+          "sha256": "ff7efcacc5f32d3f5d97252379e28fd74c6777a7518dfab157b10c967fc14a1f",
+          "bytes": 15389,
+          "license": "MIT",
+          "copyright": "Copyright (C) 2017-2021 WireGuard LLC. All Rights Reserved."
+        },
+        {
+          "archive_path": "internal/wintun/memmod/syscall_windows_32.go",
+          "sha256": "0161982002d9f2ce65f6b07b0f56e6685da9f182b896d4c31e1569371cce25bc",
+          "bytes": 3869,
+          "license": "MIT",
+          "copyright": "Copyright (C) 2017-2021 WireGuard LLC. All Rights Reserved."
+        },
+        {
+          "archive_path": "internal/wintun/memmod/syscall_windows_64.go",
+          "sha256": "236d97e309a2f99d6d328af648908eba85b81018dd4f248536e6d8467eaf2a6a",
+          "bytes": 3845,
+          "license": "MIT",
+          "copyright": "Copyright (C) 2017-2021 WireGuard LLC. All Rights Reserved."
+        },
+        {
+          "archive_path": "internal/wintun/session_windows.go",
+          "sha256": "35af35b9f56f424da72b67f7ad03532ce87c3441d39067dc879033df09b91282",
+          "bytes": 2702,
+          "license": "MIT",
+          "copyright": "Copyright (C) 2017-2021 WireGuard LLC. All Rights Reserved."
+        },
+        {
+          "archive_path": "internal/wintun/wintun_windows.go",
+          "sha256": "b20c036332f305d8a6e207becd05b9763a8868e78682101922e388111cceb985",
+          "bytes": 3319,
+          "license": "MIT",
+          "copyright": "Copyright (C) 2017-2021 WireGuard LLC. All Rights Reserved."
+        }
+      ],
+      "notices": [
+        {
+          "archive_path": "wintun/LICENSE.txt",
+          "aggregate_marker": "wintun-0.14.1:8d33a7c70cccdc6c",
+          "sha256": "183adac21e7d96c508c8fd34d394b7b6708bc81564ad1bad61ab66143a008cd2",
+          "bytes": 5431,
+          "aggregate_text_sha256": "183adac21e7d96c508c8fd34d394b7b6708bc81564ad1bad61ab66143a008cd2",
+          "aggregate_text_bytes": 5431,
+          "repository_path": "licenses/WINTUN-PREBUILT-BINARIES-LICENSE.txt",
+          "source_url": "https://www.wintun.net/builds/wintun-0.14.1.zip"
+        },
+        {
+          "archive_path": null,
+          "aggregate_marker": "wintun-0.14.1:f99497468ab5823a",
+          "sha256": "11bbdd825e332169192d2a2e555feaa6afea7eb479c5ed17f172d8ca9ddef4b0",
+          "bytes": 1084,
+          "aggregate_text_sha256": "11bbdd825e332169192d2a2e555feaa6afea7eb479c5ed17f172d8ca9ddef4b0",
+          "aggregate_text_bytes": 1084,
+          "repository_path": "licenses/WIREGUARD-MIT.txt",
+          "source_url": "https://git.zx2c4.com/wintun-go/plain/LICENSE?id=0fa3db229ce2036ae779de8ba03d336b7aa826bd",
+          "source_sha256": "91276db973f25602d1aa43491f59cbc84cb88e6f151e1d0cc82a755563ce0195",
+          "source_bytes": 1023,
+          "upstream_commit": "0fa3db229ce2036ae779de8ba03d336b7aa826bd",
+          "copyright_source_module": "github.com/sagernet/sing-tun",
+          "copyright_source_version": "v0.9.7-0.20261009020158-bca4bf029237",
+          "copyright_source_archive_path": "internal/wintun/dll_windows_amd64.go",
+          "composition": "Exact retained WireGuard copyright, two LF bytes, then the unchanged official MIT permission text."
+        }
+      ],
+      "scope": "All four DLLs are preserved in the corresponding sing-tun source archive; only the engine architecture is embedded in this runtime. The Go loader/memory-module MIT notice is separate from the prebuilt DLL terms."
     }
   ]
 }

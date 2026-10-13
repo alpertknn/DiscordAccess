@@ -81,7 +81,7 @@ namespace DiscordAccess
             if (args.Any(arg => arg == "--help" || arg == "-h" || arg == "/?")) { Help(); return 0; }
             if (args.Any(arg => arg != "--connect" && arg != "--start" && !DnsOptions.IsArgument(arg)))
             { WriteConsole("Tanınmayan seçenek. Kullanım için --help yazın."); return 64; }
-            try { Console.OutputEncoding = new UTF8Encoding(false); Console.Title = "Discord Erişim v4.20"; } catch { }
+            try { Console.OutputEncoding = new UTF8Encoding(false); Console.Title = "Discord Erişim v4.21"; } catch { }
             using (var output = new ConsoleOutput(SessionLog.Write, WriteConsole))
             using (var state = new SessionState())
             using (var launchSignal = ManualLaunchSignal.Listen(() => state.Command("A")))
@@ -92,7 +92,7 @@ namespace DiscordAccess
                     try { state.Startup(startupIntent); }
                     catch (Exception error) { SessionLog.Write("Konsol otomatik açılışı: " + SafeError(error)); }
                 });
-                output.Show("Discord Erişim v4.20 | Bağlanıyor...");
+                output.Show("Discord Erişim v4.21 | Bağlanıyor...");
                 var controller = new Controller(output.File, (active, message) =>
                 {
                     state.StateChanged(active);
@@ -612,7 +612,7 @@ namespace DiscordAccess
         }
         private static void Help()
         {
-            WriteConsole("Discord Erişim v4.20 — sistem tepsisi ve komut satırı");
+            WriteConsole("Discord Erişim v4.21 — sistem tepsisi ve komut satırı");
             WriteConsole("DiscordAccess.exe                 Sistem tepsisinde bağlantıyı hazır tutar; açık CMD bırakmaz.");
             WriteConsole("DiscordAccess.exe --console       Önceki Q / T / D konsolunu açar.");
             WriteConsole("--tray                           Sistem tepsisi modu (varsayılan).");

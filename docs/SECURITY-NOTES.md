@@ -1,8 +1,8 @@
 # Güvenlik sınırları
 
-v4.20, v4.19'un korumalarını ve aşağıdaki ek kontrolleri içerir. Otomatik kontrollerin geçmesi, yazılımın açık içermediğini veya her Discord/ağ koşulunda çalışacağını kanıtlamaz. Bu sürümün gerçek hesap, ses/yayın ve Windows yeniden başlatma denemesi ayrıca yapılmalıdır.
+v4.21, v4.20'nin aşağıdaki korumalarını ve resmî Discord/profil/ağ akışını korur; bu sürümün ek kapsamı lisans/native kaynak envanteri ve dağıtım belgeleridir. Otomatik kontrollerin geçmesi, yazılımın açık içermediğini veya her Discord/ağ koşulunda çalışacağını kanıtlamaz. Gerçek hesap, ses/yayın ve Windows yeniden başlatma denemesi ayrı doğrulamadır.
 
-## Bu revizyondaki korumalar
+## Korunan teknik sınırlar
 
 - Yerel proxy düz HTTP `Upgrade` isteklerini motor kimlik bilgileri eklenmeden reddeder. HTTPS/WSS için mevcut CONNECT akışı korunur.
 - Otomatik başlangıçtan önce EXE ve üst klasörlerin sahibi ve etkin yazma/silme izinleri doğrulanır. Başka standart kullanıcıların değiştirebildiği hedefe kalıcı başlangıç kaydı kurulmaz; kullanıcı izinleri değiştirilmez.
@@ -20,4 +20,8 @@ Aynı kullanıcı yetkisini ele geçiren zararlı yazılım veya yönetici/SYSTE
 
 Bu proje imzasızdır. Açık kaynak lisansı, hash kontrolü ve test başarısı Smart App Control veya anti-cheat onayı sağlamaz. Güvenlik politikaları düşürülmez; engellenen yerel testler farklı yükleme yöntemiyle çalıştırılmaz. GitHub Actions kaldırılmıştır; Windows regresyonları izin verilen geliştirme ortamında elle çalıştırılır. Geçmiş otomatik test kayıtları sonradan değişen kodun doğrulaması sayılmaz.
 
-Hata bildirirken hesap token'ı, profil, imzalı ek dosyası URL'si, kurtarma journal'ı veya `.preserved` dosyalarını paylaşmayın. Program sürümü, kısa hata kodu ve kişisel verilerden arındırılmış yeniden üretim adımları yeterlidir.
+Güvenlik açığı bildirim yolu ve desteklenen sürüm politikası [SECURITY.md](../SECURITY.md) içindedir. Normal hata bildirimlerinde hesap token'ı, profil, imzalı ek dosyası URL'si, kurtarma journal'ı veya `.preserved` dosyalarını paylaşmayın. Program sürümü, kısa hata kodu ve kişisel verilerden arındırılmış yeniden üretim adımları yeterlidir.
+
+## Lisans ve dağıtım kapsamı
+
+Uygulamanın kendi kodu MIT lisanslıdır; upstream motor kaynakları ve `engine-patches/` içindeki türetilmiş dosyalar kendi GPL-3.0-or-later kapsamını korur. Gömülü native bileşenler ve diğer bağımlılıklar da kendi bildirimleriyle envantere dahil edilir. Lisans metni veya karşılık gelen kaynağın sağlanması, Windows güvenlik onayı veya canlı Discord işlevi doğrulaması değildir. Dağıtım öncesi kontroller [RELEASING.md](RELEASING.md) içindedir.

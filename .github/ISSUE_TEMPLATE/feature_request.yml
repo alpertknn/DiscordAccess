@@ -1,0 +1,34 @@
+name: Özellik önerisi
+description: Somut bir kullanım ihtiyacını ve beklenen davranışı açıklayın.
+title: "[Öneri]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Proje mevcut resmî Discord Stable ve profilini kullanır; genel Windows ağ ayarlarını değiştirmez.
+        Token, profil, journal, ham log, kişisel yol/IP veya imzalı indirme URL'si paylaşmayın. Güvenlik bulguları için [SECURITY.md](https://github.com/alpertknn/DiscordAccess/blob/main/SECURITY.md) politikasını kullanın.
+  - type: textarea
+    id: need
+    attributes:
+      label: Çözülmesi gereken kullanım ihtiyacı
+      description: Hangi işlem sırasında sorun yaşandığını sentetik bir örnekle anlatın.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Önerilen davranış
+      description: Kullanıcının göreceği sonucu ve mevcut akışa etkisini yazın.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Mevcut yöntem veya alternatif
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Gizlilik
+      options:
+        - label: Örnekte hassas veya kişisel veri kullanmadım.
+          required: true

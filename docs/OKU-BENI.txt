@@ -1,9 +1,17 @@
-DiscordAccess v4.20 — Windows x64 paketi
+DiscordAccess v4.21 — Windows x64 paketi
 
 ZIP'i tamamen kısa, kalıcı bir yerel klasöre çıkarın. DiscordAccess.exe ile
 engine/sing-box.exe aynı pakette bulunmalıdır. Baslat.cmd kaldırıldı.
 GitHub Code > Download ZIP yalnız kaynak kodudur; hazır ZIP'i Releases'ten alın.
 https://github.com/alpertknn/DiscordAccess/releases
+
+Önceki sürümden geçiş / klasör değiştirme:
+1. Eski DiscordAccess'te Windows ile başlat açıksa önce kapatın.
+2. Discord'u tamamen kapatın; eski DiscordAccess'ten Çıkış seçin.
+3. Yeni paketi ayrı, kısa ve kalıcı bir klasöre tamamen çıkarın. Çalışan paketin
+   üzerine yazmayın veya klasörünü taşımayın.
+4. Yeni EXE ile bağlantıyı hazırlayın. Otomatik başlangıç istiyorsanız yeni
+   konumda Windows ile başlat seçeneğini yeniden açın; kapalı tercih korunur.
 
 İlk açılış:
 1. Discord'u sistem tepsisinden tamamen kapatın. Eski DiscordAccess açıksa
@@ -82,7 +90,7 @@ Başlangıç kurtarması: startup-session\journal.json (kişisel veri, paylaşma
 Windows 10/11 x64, .NET Framework 4.8 ve yazılabilir resmi Discord Stable gerekir.
 Yönetici olarak açmayın. EXE'ler Windows güvenlik değerlendirmesine tabidir.
 
-Bu sürüm v4.19 korumalarını korur; geçici çalıştırılabilir destek ve kurtarma
+Bu sürüm v4.20 korumalarını korur; geçici çalıştırılabilir destek ve kurtarma
 dosyalarının kendi izinlerini kontrol eder. Açma/durum/başlangıç bildirimleri
 kullanıcıya özel ad alanındadır; kilit devri ikinci bağlantıya izin vermez.
 Motorun HTTP doğrulama öncesi sınırları: 128 bekleyen bağlantı, mutlak 5 saniye
@@ -103,8 +111,19 @@ Tamamlanan kontrol ve commit bilgisi ilgili PR içinde belirtilir. Gerçek hesap
 Windows yeniden başlatması ve tepsi etkileşimi bu otomatik testlerden ayrıdır.
 Bu sürümde bu kullanıcı testleri henüz tamamlanmadı.
 
+v4.21, motor ve gömülü native bileşenlerin lisans/kaynak dağıtımını düzeltir;
+resmî Discord, mevcut profil ve bağlantı akışı değişmez. Eski kaynak etiketleri
+korunur; eksik bildirimli eski ikili paketleri yeniden dağıtmayın.
+
+Uygulamanın kendi kodu MIT lisanslıdır. Upstream'den türetilen motor kodunun
+GPL-3.0-or-later kapsamı ve native bileşenlerin kendi lisansları korunur.
 Motor ve gömülü bağımlılık/Go runtime lisansları LISANSLAR.txt içindedir.
 Sabit kaynak sürümleri ve bildirim manifesti GitHub licenses/ klasöründedir.
 Motorun kaynak ve yeniden derleme paketi dağıtımla birlikte sağlanır.
 Paket test, log veya profil dosyası içermez. Her sağlayıcı/ses/yayın koşulu için
 başarı garantisi verilmez. Hash doğrulaması Windows kod imzası değildir.
+
+Normal hatalar için GitHub Issues şablonunu kullanın; sürüm, Windows build,
+adımlar ve kısa hata kodu yeterlidir. Hassas güvenlik bulguları için önce
+https://github.com/alpertknn/DiscordAccess/blob/main/SECURITY.md politikasını
+okuyun. Token, profil, journal, imzalı URL veya kişisel yol paylaşmayın.
