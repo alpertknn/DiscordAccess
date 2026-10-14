@@ -2,7 +2,7 @@
 
 ## Desteklenen sürümler
 
-Güvenlik düzeltmeleri en son yayımlanan sürüm için değerlendirilir. v4.21 yayımlandığında güncel sürüm odur; v4.20 ve önceki sürümler için yeni düzeltme desteği verilmez. Eski etiketler kaynak geçmişini korur ve güvenli/güncel ikili dağıtım önerisi sayılmaz.
+Güvenlik düzeltmeleri en son yayımlanan sürüm için değerlendirilir. v4.22 yayımlandığında güncel sürüm odur; v4.20 ve önceki sürümler için yeni düzeltme desteği verilmez. Eski etiketler kaynak geçmişini korur ve güvenli/güncel ikili dağıtım önerisi sayılmaz.
 
 Normal kullanım sorunları için [Issues](https://github.com/alpertknn/DiscordAccess/issues) şablonlarını kullanın. Güvenlik açığının ayrıntılarını herkese açık issue, PR, yorum veya log eki olarak paylaşmayın.
 

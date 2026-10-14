@@ -2,6 +2,14 @@
 
 Bu dosya doğrulanmış kaynak geçmişinin kısa özetidir. Tam kaynak sürümleri Git etiketlerinde, paket ve doğrulama ayrıntıları ilgili Release notlarında tutulur. Gerçek hesap, ses/yayın, tepsi etkileşimi ve Windows yeniden başlatması sentetik testlerden ayrı değerlendirilir.
 
+## v4.22
+
+- Başka standart kullanıcıların yazabildiği masaüstü/indirme paketleri, normal elle açılışta doğrulanan kişisel klasöre kopyalanıp oradan çalıştırılır. Windows başlangıcı artık güvenli paket kopyasına kaydedilebilir.
+- EXE, sabit hash'li motor ve kullanım/lisans/kaynak metinleriyle sınırlı kopyalama; üst klasör/ACL/içerik doğrulaması ve farklı mevcut dosyayı koruyan işlemler eklendi. Mevcut izinler değiştirilmez.
+- Otomatik başlangıç, geri alma, konsol ve Discord açma işlemleri kurulum oluşturmaz; kullanıcı başlangıcı kapattıysa tercih korunur.
+- Kişisel paket kopyası, tekrarlı açılış, farklı sürüm, yanlış motor, güvensiz kullanıcı klasörü ve dosya çakışmaları için sentetik regresyon kontrolleri eklendi.
+- Motor ve beş dosyalı hazır paket/dört release dosyası yapısı korunur. Resmî Discord/profil/ağ akışı değiştirilmez.
+
 ## v4.21
 
 - Motorun WireGuard wrapper/native bileşenlerini de kapsayan lisans ve karşılık gelen kaynak envanteri düzeltildi; hazır dağıtım malzemeleri yenilendi.

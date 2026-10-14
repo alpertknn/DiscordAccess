@@ -1,4 +1,4 @@
-DiscordAccess v4.21 — Windows x64 paketi
+DiscordAccess v4.22 — Windows x64 paketi
 
 ZIP'i tamamen kısa, kalıcı bir yerel klasöre çıkarın. DiscordAccess.exe ile
 engine/sing-box.exe aynı pakette bulunmalıdır. Baslat.cmd kaldırıldı.
@@ -53,6 +53,17 @@ Paketi bağlantı açıkken taşımayın/silmeyin. Başka klasöre taşıyacaksa
 Windows ile başlat seçeneğini kapatın, yeni yerde yeniden etkinleştirin.
 Uzun başlangıç komutları Windows'un 260 karakter sınırına takılırsa daha kısa
 kalıcı klasör seçin. Başlangıç tercihi yalnız o Windows kullanıcısına aittir.
+
+v4.22 kişisel kurulum:
+Masaüstü/indirme paketine başka standart kullanıcılar yazabiliyorsa normal elle
+açılış, paketi %USERPROFILE%\DiscordAccess\packages\<uygulama-hash> altına
+kopyalar ve doğrulanan EXE ile yeniden başlar. Kaynak paket yerinde kalır;
+mevcut klasör/dosya izinleri değiştirilmez. Yalnız EXE, sabit hash'li motor ve
+üç kullanım/lisans/kaynak metni kopyalanır; profil/ayar/log dosyası taşınmaz.
+Kullanıcı klasörü ve üst klasörler de güvenli değilse kurulum reddedilir.
+Farklı mevcut dosyanın üzerine yazılmaz. Windows açılışı/geri alma/konsol/
+Discord açma kısayolu yeni kurulum oluşturmaz. Kapalı başlangıç tercihi korunur;
+istenirse yeni tepsi oturumundan Windows ile başlat yeniden açılır.
 
 Bir DiscordAccess ve bir sing-box motoru yeterlidir. Discord'un Electron alt
 süreçleri normaldir; bunlar ayrı Discord kopyası sayılmaz ve öldürülmez.
@@ -111,7 +122,7 @@ Tamamlanan kontrol ve commit bilgisi ilgili PR içinde belirtilir. Gerçek hesap
 Windows yeniden başlatması ve tepsi etkileşimi bu otomatik testlerden ayrıdır.
 Bu sürümde bu kullanıcı testleri henüz tamamlanmadı.
 
-v4.21, motor ve gömülü native bileşenlerin lisans/kaynak dağıtımını düzeltir;
+v4.22, güvenli kişisel paket kopyasıyla Windows başlangıç konumunu düzeltir;
 resmî Discord, mevcut profil ve bağlantı akışı değişmez. Eski kaynak etiketleri
 korunur; eksik bildirimli eski ikili paketleri yeniden dağıtmayın.
 

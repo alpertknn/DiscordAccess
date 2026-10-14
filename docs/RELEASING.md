@@ -25,14 +25,14 @@ $releaseCommit = (git rev-parse HEAD).Trim()
 $engineBuildCommit = 'ENGINE_BUILD_COMMIT'
 $buildEvidence = 'work/security-engine-build-GERCEK_KIMLIK/artifacts'
 $verifiedCache = 'work/license-source-cache'
-$prepareRoot = Join-Path 'work' ('release-v4.21-' + [Guid]::NewGuid().ToString('N'))
+$prepareRoot = Join-Path 'work' ('release-v4.22-' + [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $prepareRoot | Out-Null
-$sourceZip = Join-Path $prepareRoot 'DiscordAccess-v4.21-engine-source.zip'
+$sourceZip = Join-Path $prepareRoot 'DiscordAccess-v4.22-engine-source.zip'
 $assets = Join-Path $prepareRoot 'assets'
 $receipt = Join-Path $prepareRoot 'release-validation-local.json'
 
-python scripts/Package-EngineSource.py --repo . --version 4.21 --commit $releaseCommit --build-evidence $buildEvidence --evidence-commit $engineBuildCommit --cache-dir $verifiedCache --output $sourceZip
-python scripts/Package-Release.py --repo . --version 4.21 --commit $releaseCommit --engine engine/sing-box.exe --source $sourceZip --build-evidence $buildEvidence --output-dir $assets --receipt $receipt
+python scripts/Package-EngineSource.py --repo . --version 4.22 --commit $releaseCommit --build-evidence $buildEvidence --evidence-commit $engineBuildCommit --cache-dir $verifiedCache --output $sourceZip
+python scripts/Package-Release.py --repo . --version 4.22 --commit $releaseCommit --engine engine/sing-box.exe --source $sourceZip --build-evidence $buildEvidence --output-dir $assets --receipt $receipt
 ```
 
 Önceki doğrulanmış kaynak paketinden arşivleri almak gerekiyorsa ilk komuta `--source-companion ONCEKI_KAYNAK_ZIP` eklenebilir. Bu, güncel başarılı elle derleme kanıtının yerine geçmez. Native arşivler de collector'ın beklediği cache adları ve hash'leriyle bulunmalıdır.
@@ -40,16 +40,16 @@ python scripts/Package-Release.py --repo . --version 4.21 --commit $releaseCommi
 Aynı girdilerle hazırlanmış dosyaları yeniden doğrulayın:
 
 ```powershell
-python scripts/Package-EngineSource.py --repo . --version 4.21 --commit $releaseCommit --build-evidence $buildEvidence --evidence-commit $engineBuildCommit --cache-dir $verifiedCache --output $sourceZip --validate-only
-python scripts/Package-Release.py --repo . --version 4.21 --commit $releaseCommit --engine engine/sing-box.exe --source $sourceZip --build-evidence $buildEvidence --output-dir $assets --receipt $receipt --validate-only
+python scripts/Package-EngineSource.py --repo . --version 4.22 --commit $releaseCommit --build-evidence $buildEvidence --evidence-commit $engineBuildCommit --cache-dir $verifiedCache --output $sourceZip --validate-only
+python scripts/Package-Release.py --repo . --version 4.22 --commit $releaseCommit --engine engine/sing-box.exe --source $sourceZip --build-evidence $buildEvidence --output-dir $assets --receipt $receipt --validate-only
 ```
 
 İlk hazırlamada `--source-companion` kullanıldıysa kaynak doğrulama komutuna da aynı girdiyi ekleyin. Her iki komut, mevcut çıktıların beklenen byte'larla aynı olduğunu kontrol eder ve dosya değiştirmez. Sıfır çıkış koduyla birlikte `existing_output_verified: true` sonucunu kaydedin. Çıktı yolu henüz yoksa `--validate-only` yalnız beklenen hash'leri hesaplar; bu, hazırlanmış yayın dosyalarının doğrulandığı anlamına gelmez. Hazır uygulama `DiscordAccess.exe` üzerinden alınır; motor veya uygulama paketleyiciler tarafından çalıştırılmaz.
 
 Yalnız şu dört dosya Release'e eklenir:
 
-- `DiscordAccess-v4.21.zip`
-- `DiscordAccess-v4.21-engine-source.zip`
+- `DiscordAccess-v4.22.zip`
+- `DiscordAccess-v4.22-engine-source.zip`
 - `engine-source-manifest.json`
 - `SHA256SUMS.txt`
 
