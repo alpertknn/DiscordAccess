@@ -23,6 +23,7 @@ namespace DiscordAccess
         internal static int Main(string[] args)
         {
             args = args ?? new string[0];
+            string[] launchArguments = args.ToArray();
             bool fromIcon = args.Length == 1 && args[0] == "--open-discord";
             bool background = !ResidentOptions.ConsoleRequested(args);
             try
@@ -65,6 +66,7 @@ namespace DiscordAccess
                     if (background) return ReportArgument(new ArgumentException("Tanınmayan seçenek. Kullanım için --help yazın."), true);
                     return ConsoleHost.Run(args, dns);
                 }
+                if (StartupPackage.RelaunchIfNeeded(launchArguments, background, mode.Startup, restoring, fromIcon)) return 0;
                 using (var instance = ResidentInstance.Acquire())
                 {
                     if (!instance.IsPrimary)

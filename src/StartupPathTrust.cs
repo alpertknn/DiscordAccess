@@ -43,6 +43,20 @@ namespace DiscordAccess
             catch { throw Rejected(); }
         }
 
+        // Installation must prove the directory before creating any children.
+        // Existing ACLs are observed, never repaired or relaxed.
+        internal static void VerifyDirectory(string directory)
+        {
+            try
+            {
+                string path = LocalPath(Path.Combine(directory, "DiscordAccess.exe"));
+                using (var identity = WindowsIdentity.GetCurrent())
+                    VerifyChain(Path.GetDirectoryName(path), identity.User, ReadDescriptor, Safety.NoReparse, true);
+            }
+            catch (UserActionException) { throw; }
+            catch { throw Rejected(); }
+        }
+
         private static string LocalPath(string value)
         {
             if (String.IsNullOrWhiteSpace(value) || value.Length > 32760) throw Rejected();
@@ -65,9 +79,9 @@ namespace DiscordAccess
         }
 
         private static void VerifyChain(string path, SecurityIdentifier user,
-            Func<string, bool, RawSecurityDescriptor> read, Func<string, bool> ordinaryPath)
+            Func<string, bool, RawSecurityDescriptor> read, Func<string, bool> ordinaryPath, bool directoryRoot = false)
         {
-            int depth = 0;
+            int depth = directoryRoot ? 1 : 0;
             for (string current = path; !String.IsNullOrEmpty(current); current = Path.GetDirectoryName(current))
             {
                 bool directory = depth != 0;
@@ -133,7 +147,7 @@ namespace DiscordAccess
 
         private static UserActionException Rejected()
         {
-            return new UserActionException("Bu klasör otomatik başlangıç için güvenli doğrulanamadı. Paketi yalnız sizin yazabildiğiniz kişisel bir klasöre taşıyıp yeniden deneyin.");
+            return new UserActionException("Bu klasör otomatik başlangıç için güvenli doğrulanamadı. DiscordAccess'i elle açarak kişisel kurulumu hazırlayın. Kullanıcı klasörünüz de güvenli doğrulanamıyorsa yalnız sizin yazabildiğiniz bir klasör kullanın.");
         }
 
 #if TEST_BUILD

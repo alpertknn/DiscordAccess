@@ -33,6 +33,7 @@ src\BackgroundLifecycle.cs
 src\StartupCoordinator.cs
 src\TrayHost.cs
 src\StartupPathTrust.cs
+src\StartupPackage.cs
 src\PrivateFileTrust.cs
 src\ResidentInstance.cs
 src\FileTransaction.cs

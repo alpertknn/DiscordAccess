@@ -32,6 +32,17 @@ namespace DiscordAccess
                 return ResidentInstanceChecks.RunSignalChild(args[1], args[2], args.Length == 4);
             }
             Program.PackageDirectory = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".."));
+            if (args.Length == 1 && args[0] == "--startup-package-checks")
+            {
+                try
+                {
+                    Console.WriteLine("Startup executable trust: PASS (" + StartupPathTrustChecks.Run(Program.PackageDirectory) + " checks)");
+                    Console.WriteLine("Personal startup package: PASS (" + StartupPackageChecks.Run(Program.PackageDirectory) + " checks; inert files only)");
+                    Console.WriteLine("Ordered Windows startup: PASS (" + StartupCoordinatorChecks.Run(Program.PackageDirectory) + " checks; synthetic registry only)");
+                    return 0;
+                }
+                catch (Exception ex) { Console.WriteLine("FAIL " + ex.GetType().Name + ": " + ex.Message); return 1; }
+            }
             if (args.Length == 1 && args[0] == "--resident-ipc-checks")
             {
                 // A bounded CI preflight for namespace/ownership regressions;
