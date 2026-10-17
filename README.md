@@ -1,4 +1,8 @@
-# DiscordAccess
+<p align="center">
+  <img src="docs/assets/discordaccess.svg" width="112" height="112" alt="DiscordAccess DA icon">
+</p>
+
+<h1 align="center">DiscordAccess</h1>
 
 A connection helper for the official Discord Stable desktop app you already have installed. It lets Discord reach its servers through a local, Discord-only proxy and a hash-pinned DoH engine. On Windows it runs as a system tray app; on macOS it runs as a native menu bar app (pre-release). The interface is in English; the current Windows release, v4.22, still shows it in Turkish.
 

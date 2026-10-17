@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">DiscordAccess DA icon</title>
+  <rect x="6.4" y="6.4" width="115.2" height="115.2" rx="25.6" fill="#5865F2"/>
+  <g transform="translate(16.64 99.52) scale(.72 -.72)" fill="#FFFFFF" fill-rule="evenodd">
+    <path d="M8 16H36C59 16 72 28 72 48S59 80 36 80H8ZM26 32H36C48 32 54 38 54 48S48 64 36 64H26Z" />
+    
+    <path d="M52 16L80 80H98L126 16H106L101 29H77L72 16ZM83 45L89 61L95 45Z" />
+  
+  </g>
+</svg>
