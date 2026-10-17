@@ -39,6 +39,9 @@ app="$output/DiscordAccess.app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Helpers" "$app/Contents/Resources" "$app/Contents/Library/LaunchAgents"
 install -m 0644 "$macos/Resources/Info.plist" "$app/Contents/Info.plist"
 install -m 0644 "$macos/Resources/$agent" "$app/Contents/Library/LaunchAgents/$agent"
+# Render all icon sizes from the same AppKit vector used by the menu bar.
+xcrun swiftc "$macos/Sources/DiscordAccess/BrandIcon.swift" "$macos/scripts/render-icons.swift" -o "$output/render-icons"
+"$output/render-icons" "$output/AppIcon.iconset" "$app/Contents/Resources/AppIcon.icns"
 install -m 0644 "$hook" "$app/Contents/Resources/attachment-download.cjs"
 install -m 0755 "$binary" "$app/Contents/MacOS/DiscordAccess"
 # cp keeps the engine's bytes, and so its linker signature, exactly.

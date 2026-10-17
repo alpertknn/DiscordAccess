@@ -8,6 +8,8 @@
 	<string>DiscordAccess</string>
 	<key>CFBundleExecutable</key>
 	<string>DiscordAccess</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>io.github.alpertknn.DiscordAccess</string>
 	<key>CFBundleInfoDictionaryVersion</key>

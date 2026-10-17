@@ -365,10 +365,8 @@ final class MenuBarApp: NSObject, NSApplicationDelegate, NSMenuDelegate {
         quitItem.isEnabled = state.canQuit
         refreshStartup()
         guard let button = item?.button else { return }
-        let symbol = phase == .ready ? "bubble.left.and.bubble.right.fill" : "bubble.left.and.bubble.right"
-        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "DiscordAccess")
-        image?.isTemplate = true
-        button.image = image
+        button.image = BrandIcon.statusImage
+        button.appearsDisabled = phase != .ready
         button.toolTip = state.tooltip
     }
 
