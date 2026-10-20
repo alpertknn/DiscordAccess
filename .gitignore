@@ -61,3 +61,7 @@ package-results.json
 *.sln.docstates
 Thumbs.db
 Desktop.ini
+/.vscode/
+
+# Local design explorations stay out of Git.
+/macos/Design/

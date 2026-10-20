@@ -40,13 +40,16 @@ import Testing
 
     final class Session {
         let fixture: DiscordProfileChangesTests.Fixture
-        let installation: DiscordInstallation
+        var installation: DiscordInstallation
         let discord = Discord()
         let lines = Collected<String>()
         let states = Collected<String>()
         var hook = SessionControllerTests.hook
         var onRunning: (() -> Void)?
         var onLocate: (() -> Void)?
+        var locateFailure: Error?
+        static let updated = "0.0.418"
+        static let core = "/modules/discord_desktop_core-1/discord_desktop_core/"
 
         init() throws {
             fixture = try DiscordProfileChangesTests.Fixture()
@@ -63,8 +66,9 @@ import Testing
             let settings = SessionController.Settings(engine: TestEngine.path, hook: hook, dns: DnsOptions(provider: .google), profile: fixture.profile,
                                                       state: fixture.state, downloads: fixture.directory.path + "/downloads")
             let system = SessionController.System(
-                locate: { [weak self, installation] _ in
-                    self?.onLocate?()
+                locate: { [unowned self] _ in
+                    onLocate?()
+                    if let locateFailure { throw locateFailure }
                     return installation
                 },
                 running: { [weak self] _ in
@@ -74,6 +78,18 @@ import Testing
                 launch: { [discord] _, arguments in discord.launches.append(arguments) },
                 anyRunning: { [discord] in discord.read() })
             return SessionController(settings: settings, system: system, log: lines.append, changed: { [states] _, message in states.append(message) })
+        }
+
+        var updatedEntry: String { fixture.profile + "/app-" + Self.updated + Self.core + "index.js" }
+
+        /// Discord updates itself in place: a new version's folder with its own entry, the old one removed unless `keepOld`.
+        func update(keepOld: Bool) throws {
+            if !keepOld { try FileManager.default.removeItem(atPath: fixture.profile + "/app-" + DiscordProfileChangesTests.version) }
+            let folder = (updatedEntry as NSString).deletingLastPathComponent
+            try FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
+            try SafeFileTests.write(updatedEntry, DiscordProfileChangesTests.official)
+            try SafeFileTests.write(folder + "/core.asar", "archive")
+            installation = DiscordInstallation(bundle: installation.bundle, version: Self.updated)
         }
 
         /// Discord's own entries and settings are as they were before the session.
@@ -196,6 +212,80 @@ import Testing
         try third.connect()
         #expect(session.lines.all.contains("Restored the temporary Discord settings of the previous session."))
         try third.disconnect()
+        #expect(session.untouched)
+    }
+
+    /// Discord updating itself mid-session leaves the new version without the wrapper; the next open applies it there,
+    /// once, and disconnecting undoes it. Discord usually deletes the old version's folder; the session must not need it.
+    @Test(.enabled(if: TestEngine.isAvailable), arguments: [false, true])
+    func opensAnUpdatedDiscordThroughTheSession(keepOld: Bool) throws {
+        let session = try Session()
+        let controller = session.controller()
+        // A failed expectation must not leave the engine running.
+        defer { try? controller.disconnect() }
+        try controller.connect()
+        try session.update(keepOld: keepOld)
+
+        #expect(try controller.openDiscord() == "Sent the request to open the official Discord.")
+        #expect(SafeFileTests.text(session.updatedEntry)?.hasPrefix(SessionWrapper.marker) == true)
+        if keepOld { #expect(SafeFileTests.text(session.fixture.entry(1)) == DiscordProfileChangesTests.official) }
+        #expect(try controller.openDiscord() == "Sent the request to open the official Discord.")
+        #expect(session.discord.launches.all.count == 2)
+        #expect(session.lines.all.filter { $0.hasPrefix("Discord was updated to ") } == ["Discord was updated to " + Session.updated + "; the session now applies to that version."])
+        try controller.disconnect()
+        #expect(SafeFileTests.text(session.updatedEntry) == DiscordProfileChangesTests.official)
+        #expect(try SafeFileTests.text(session.fixture.journal) == nil && session.fixture.settings()["NEW_UPDATE_ENDPOINT"] == nil)
+        #expect(session.fixture.leftovers.isEmpty)
+    }
+
+    /// The updated Discord relaunching itself is left alone: its profile may not change while it runs.
+    @Test(.enabled(if: TestEngine.isAvailable))
+    func leavesAnUpdatedDiscordThatRuns() throws {
+        let session = try Session()
+        let controller = session.controller()
+        // A failed expectation must not leave the engine running.
+        defer { try? controller.disconnect() }
+        try controller.connect()
+        try session.update(keepOld: false)
+        session.discord.set(true)
+        #expect(try controller.openDiscord() == "Discord is already open; it was not opened again.")
+        #expect(SafeFileTests.text(session.updatedEntry) == DiscordProfileChangesTests.official && session.discord.launches.all.isEmpty)
+        session.discord.set(false)
+        #expect(try controller.openDiscord() == "Sent the request to open the official Discord.")
+        #expect(SafeFileTests.text(session.updatedEntry)?.hasPrefix(SessionWrapper.marker) == true)
+        try controller.disconnect()
+        #expect(SafeFileTests.text(session.updatedEntry) == DiscordProfileChangesTests.official)
+    }
+
+    /// An updated version the session cannot wrap ends the session with Discord's profile restored, never half-moved.
+    @Test(.enabled(if: TestEngine.isAvailable))
+    func endsTheSessionWhenAnUpdateCannotBeFollowed() throws {
+        let session = try Session()
+        let controller = session.controller()
+        defer { try? controller.disconnect() }
+        try controller.connect()
+        let pid = try #require(controller.enginePID)
+        try session.update(keepOld: true)
+        try FileManager.default.removeItem(atPath: (session.updatedEntry as NSString).deletingLastPathComponent + "/core.asar")
+
+        #expect(throws: KitError.profileMissingModule()) { try controller.openDiscord() }
+        #expect(!controller.isActive && Self.gone(pid) && session.discord.launches.all.isEmpty)
+        #expect(session.states.all.last == "Discord was updated, but the connection could not follow it; connect again.")
+        #expect(session.untouched && SafeFileTests.text(session.updatedEntry) == DiscordProfileChangesTests.official)
+    }
+
+    /// Only an update in place is followed; a Discord.app that is gone or no longer verifies is refused.
+    @Test(.enabled(if: TestEngine.isAvailable))
+    func refusesADiscordThatIsNoLongerTheSame() throws {
+        let session = try Session()
+        let controller = session.controller()
+        // A failed expectation must not leave the engine running.
+        defer { try? controller.disconnect() }
+        try controller.connect()
+        session.locateFailure = KitError.discordUnverified(session.installation.bundle)
+        #expect(throws: KitError.discordChanged()) { try controller.openDiscord() }
+        #expect(session.discord.launches.all.isEmpty && SafeFileTests.text(session.fixture.entry(1))?.hasPrefix(SessionWrapper.marker) == true)
+        try controller.disconnect()
         #expect(session.untouched)
     }
 

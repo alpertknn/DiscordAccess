@@ -63,6 +63,8 @@ public final class SessionController {
     private var connection: DnsConnection?
     private var bridge: UpdateBridge?
     private var changes: DiscordProfileChanges?
+    /// The wrapper written at connect; an updated Discord gets the same one.
+    private var wrapper: SessionWrapper?
     private var engineWatch: DispatchSourceProcess?
     private let flags = NSLock()
     private var activeFlag = false
@@ -164,15 +166,40 @@ public final class SessionController {
         }
         operations.unlock()
         try lifetime.check()
-        // Discord may have updated itself since; that version's profile has no wrapper (Windows refuses the same way).
-        guard (try? system.locate(installation.bundle)) == installation else { throw KitError.discordChanged() }
+        // Discord may have updated itself since; that version's profile has no wrapper yet.
+        guard let current = try? system.locate(installation.bundle) else { throw KitError.discordChanged() }
         operations.lock()
         defer { operations.unlock() }
-        guard active, connection === observed else { throw KitError.sessionNotReady() }
+        guard active, connection === observed, self.installation == installation else { throw KitError.sessionNotReady() }
         try lifetime.check()
-        if try system.running(installation) { return "Discord is already open; it was not opened again." }
-        try system.launch(installation, ["--proxy-server=" + proxy(observed), "--proxy-bypass-list=127.0.0.1;localhost", "--disable-quic"])
+        if try system.running(current) { return "Discord is already open; it was not opened again." }
+        if current != installation { try adopt(current) }
+        try system.launch(current, ["--proxy-server=" + proxy(observed), "--proxy-bypass-list=127.0.0.1;localhost", "--disable-quic"])
         return "Sent the request to open the official Discord."
+    }
+
+    /// Moves the profile changes to the version Discord updated itself to (its old `app-<version>` folder is usually
+    /// gone by then). Must be called with `operations` held and Discord closed. A move that fails ends the session, so a
+    /// half-moved profile never looks ready; connecting again starts clean.
+    private func adopt(_ updated: DiscordInstallation) throws {
+        guard let bridge, let wrapper else { throw KitError.sessionNotReady() }
+        do {
+            try changes?.restore()
+            changes = nil
+            let next = try DiscordProfileChanges.prepare(profile: settings.profile, version: updated.version, state: settings.state, wrapper: wrapper)
+            changes = next
+            try next.configure(legacy: bridge.legacyEndpoint, modern: bridge.newEndpoint)
+        } catch {
+            do {
+                try disconnectCore()
+            } catch {
+                log(ConsoleSession.message(error))
+            }
+            changed(false, "Discord was updated, but the connection could not follow it; connect again.")
+            throw error
+        }
+        installation = updated
+        log("Discord was updated to " + updated.version + "; the session now applies to that version.")
     }
 
     /// The HTTPS checks go to the log, the Gateway HELLO check is the result (Windows `DiagnoseAsync`).
@@ -256,6 +283,7 @@ public final class SessionController {
         try lifetime.check()
         guard try !system.running(installation) else { throw KitError.discordOpenedDuringPreparation() }
         let wrapper = try SessionWrapper(proxy: proxy(connection), hook: hook, downloadLog: DiscordProfile.downloadLog(root: settings.profile))
+        self.wrapper = wrapper
         let changes = try DiscordProfileChanges.prepare(profile: settings.profile, version: installation.version, state: settings.state, wrapper: wrapper)
         self.changes = changes
         try changes.configure(legacy: bridge.legacyEndpoint, modern: bridge.newEndpoint)
