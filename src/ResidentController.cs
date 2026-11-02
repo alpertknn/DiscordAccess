@@ -56,7 +56,7 @@ namespace DiscordAccess
         {
             StartupStage stage = StartupStage.Source;
             changed(false, "Connecting");
-            log("DiscordAccess v4.21: preparing the connection.");
+            log("DiscordAccess v4.23: preparing the connection.");
             try
             {
                 if (InstalledClientRunning())

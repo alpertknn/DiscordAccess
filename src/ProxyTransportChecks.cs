@@ -183,7 +183,7 @@ namespace DiscordAccess
                 using (var job = new NativeSessionJob())
                 using (var backend = NativeProcess.Start(job, image, "-NoProfile -NonInteractive -Command " + NativeProcess.Quote(script), system, null, null))
                 {
-                    Until(() => TcpOwner.OwnsListener(backend, port), "owned backend did not listen");
+                    Until(() => TcpOwner.BackendReady(backend, port), "owned backend did not become ready");
                     var diagnostics = new ConcurrentQueue<string>();
                     using (var gate = new ProcessGate(backend, job, image, null, port, "fixture-user", "fixture-password", 0, 500))
                     {
@@ -192,7 +192,8 @@ namespace DiscordAccess
                         Require(Request(gate.Port, 'C').GetAwaiter().GetResult() == ReplySize, "client half-close truncated response"); checks++;
                         var parallel = new Task<int>[16];
                         for (int i = 0; i < parallel.Length; i++) parallel[i] = Request(gate.Port, 'N');
-                        Require(Task.WhenAll(parallel).Wait(5000), "parallel responses stalled");
+                        try { Require(Task.WhenAll(parallel).Wait(5000), "parallel responses stalled"); }
+                        catch (Exception error) { throw new InvalidOperationException("Parallel transport: " + String.Join("; ", diagnostics.ToArray()), error); }
                         foreach (Task<int> task in parallel) Require(task.Result == ReplySize, "parallel response truncated"); checks++;
                         using (TcpClient client = Open(gate.Port, 'S').GetAwaiter().GetResult())
                         {

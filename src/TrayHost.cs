@@ -33,6 +33,7 @@ namespace DiscordAccess
             private readonly ToolStripMenuItem automatic = new ToolStripMenuItem("Start with Windows");
             private readonly ToolStripMenuItem quit = new ToolStripMenuItem("Exit");
             private readonly DnsOptions dns;
+            private readonly bool fromStartup;
             private readonly StartupCoordinator startup;
             private readonly Timer refresh = new Timer { Interval = 5000 };
             private IDisposable openSignal, statusSignal;
@@ -45,7 +46,7 @@ namespace DiscordAccess
 
             internal TrayContext(DnsOptions dns, DiscordInstallation installation, bool fromStartup, ResidentStartupRequests requests)
             {
-                this.dns = dns;
+                this.dns = dns; this.fromStartup = fromStartup;
                 try
                 {
                 IntPtr handle = dispatcher.Handle;
@@ -117,6 +118,7 @@ namespace DiscordAccess
                 connecting = true;
                 open.Enabled = diagnosis.Enabled = retry.Enabled = automatic.Enabled = false;
                 status.Text = "Connecting...";
+                var priority = StartupPriority.Begin(fromStartup);
                 try
                 {
                     if (lifecycle != null)
@@ -157,6 +159,7 @@ namespace DiscordAccess
                 }
                 finally
                 {
+                    priority.Dispose();
                     connecting = false;
                     if (!closing)
                     {

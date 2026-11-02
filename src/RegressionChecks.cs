@@ -36,6 +36,8 @@ namespace DiscordAccess
                 Console.WriteLine("Installed Discord transactions: PASS (" + InstalledDiscord.RunOfflineChecks(packageRoot) + " checks)");
                 Console.WriteLine("External official Discord identity: PASS (" + ExternalDiscordScopeChecks.Run() + " checks; inert processes only)");
                 Console.WriteLine("Separate application ownership: PASS (" + ProcessGate.RunApplicationOwnershipChecks() + " checks)");
+                Console.WriteLine("Backend readiness ownership: PASS (" + TcpOwner.RunReadinessChecks() + " checks; synthetic loopback only)");
+                Console.WriteLine("Startup priority: PASS (" + StartupPriority.RunOfflineChecks() + " checks; synthetic scheduling only)");
                 Console.WriteLine("Owned application termination: PASS (" + NativeSessionJob.RunTerminationChecks() + " checks)");
                 Console.WriteLine("Exited process observation: PASS (" + ProcessObservationChecks.Run() + " checks)");
                 Console.WriteLine("Console download destinations: PASS (" + ConsoleDownload.RunOfflineChecks(packageRoot) + " checks)");
