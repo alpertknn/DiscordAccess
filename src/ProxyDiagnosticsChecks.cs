@@ -115,7 +115,7 @@ namespace DiscordAccess
                     require(found, "Real gate emitted rejection diagnostic");
                     lock (logged)
                     {
-                        require(logged.Count == 1 && logged[0] == "Failure stage=RequestPolicy target=telemetry.example.invalid:80 category=ForbiddenHost", "Real gate emitted safe stage/target/category only");
+                        require(logged.Count == 1 && logged[0] == "Failure stage=RequestPolicy target=telemetry.example.invalid:80 category=ForbiddenHost", "Real gate emitted safe stage/target/category only: " + String.Join("; ", logged));
                     }
                 }
                 gate.Dispose();

@@ -34,6 +34,7 @@ src\StartupCoordinator.cs
 src\TrayHost.cs
 src\StartupPathTrust.cs
 src\StartupPackage.cs
+src\StartupPriority.cs
 src\PrivateFileTrust.cs
 src\ResidentInstance.cs
 src\FileTransaction.cs

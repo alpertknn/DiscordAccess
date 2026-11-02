@@ -127,6 +127,8 @@ namespace DiscordAccess
             using (var gate = new ProcessGate(current, job, "fixture-unused", null, 1, "fixture-user", "fixture-password", 0))
             {
                 var held = new List<TcpClient>();
+                var diagnostics = new System.Collections.Concurrent.ConcurrentQueue<string>();
+                gate.DiagnosticTrace = diagnostics.Enqueue;
                 TcpClient overflow = null, replacement = null;
                 try
                 {
@@ -140,6 +142,10 @@ namespace DiscordAccess
                     Until(() => gate.TrackedClients == ProcessGate.MaxConnections - 1, "Closed client did not release capacity.");
                     replacement = FixtureClient(port);
                     Until(() => gate.TrackedClients == ProcessGate.MaxConnections, "Released capacity could not be reused.");
+                }
+                catch (Exception error)
+                {
+                    throw new InvalidOperationException(error.Message + " Tracked=" + gate.TrackedClients + "; " + String.Join("; ", diagnostics.ToArray()), error);
                 }
                 finally
                 {
@@ -199,7 +205,7 @@ namespace DiscordAccess
                 {
                     listener.Start(); int backendPort = ((IPEndPoint)listener.LocalEndpoint).Port;
                     using (var current = Process.GetCurrentProcess())
-                        Require(TcpOwner.OwnsListener(current, backendPort) && expected.Id != current.Id,
+                        Require(TcpOwner.BackendReady(current, backendPort) && expected.Id != current.Id,
                             "Fixture listener is not owned by a PID distinct from the expected engine.");
                     Task<TcpClient> accepted = listener.AcceptTcpClientAsync();
                     using (var gate = new ProcessGate(expected, job, "fixture-unused", null, backendPort, "fixture-only-user", "fixture-only-password", 0))

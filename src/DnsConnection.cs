@@ -35,11 +35,13 @@ namespace DiscordAccess
                     "run -c stdin --disable-color", Path.GetDirectoryName(connection.Package.Engine), null,
                     connection.Package.Config(username, password, port));
                 var deadline = Stopwatch.StartNew();
-                while (!TcpOwner.OwnsListener(connection.Engine, port))
+                while (!TcpOwner.BackendReady(connection.Engine, port))
                 {
                     token.ThrowIfCancellationRequested();
-                    if (connection.Engine.HasExited || deadline.ElapsedMilliseconds >= 12000)
-                        throw new InvalidOperationException("The connection engine could not become ready.");
+                    if (connection.Engine.HasExited)
+                        throw StartupFailureException.From(StartupStage.Engine, new IOException("Engine exited before readiness."));
+                    if (deadline.ElapsedMilliseconds >= 12000)
+                        throw StartupFailureException.From(StartupStage.Engine, new TimeoutException());
                     if (token.WaitHandle.WaitOne(40)) token.ThrowIfCancellationRequested();
                 }
                 token.ThrowIfCancellationRequested();

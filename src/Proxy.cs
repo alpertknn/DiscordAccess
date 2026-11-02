@@ -251,7 +251,9 @@ namespace DiscordAccess
 #endif
         private async Task<int> FindPeer(int source, int destination)
         {
-            for (int attempt = 0; attempt < 4; attempt++)
+            // Windows may publish a new connection's owner after the handshake.
+            // Keep admission closed while allowing a bounded scheduling delay.
+            for (int attempt = 0; attempt < 100; attempt++)
             {
                 cancellation.Token.ThrowIfCancellationRequested();
                 int owner = TcpOwner.Find(source, destination);
@@ -511,19 +513,30 @@ namespace DiscordAccess
         private static int Port(uint value) { return (int)(((value & 255) << 8) | ((value >> 8) & 255)); }
         private static Row[] Rows()
         {
-            int size = 0; GetExtendedTcpTable(IntPtr.Zero, ref size, false, 2, 5, 0);
-            if (size < 4 || size > 16 * 1024 * 1024) return new Row[0];
-            IntPtr data = Marshal.AllocHGlobal(size);
-            try
+            int size = 0;
+            uint status = GetExtendedTcpTable(IntPtr.Zero, ref size, false, 2, 5, 0);
+            if (status != 0 && status != 122) return new Row[0];
+            // Other applications can add sockets between the size query and
+            // the snapshot. Retry a bounded resize rather than losing all owners.
+            for (int attempt = 0; attempt < 4; attempt++)
             {
-                if (GetExtendedTcpTable(data, ref size, false, 2, 5, 0) != 0) return new Row[0];
-                int count = Marshal.ReadInt32(data), stride = Marshal.SizeOf(typeof(Row));
-                if (count < 0 || count > (size - 4) / stride) return new Row[0];
-                var rows = new Row[count];
-                for (int i = 0; i < count; i++) rows[i] = (Row)Marshal.PtrToStructure(IntPtr.Add(data, 4 + i * stride), typeof(Row));
-                return rows;
+                if (size < 4 || size > 16 * 1024 * 1024) return new Row[0];
+                int capacity = size;
+                IntPtr data = Marshal.AllocHGlobal(capacity);
+                try
+                {
+                    status = GetExtendedTcpTable(data, ref size, false, 2, 5, 0);
+                    if (status == 122) continue;
+                    if (status != 0 || size < 4 || size > capacity) return new Row[0];
+                    int count = Marshal.ReadInt32(data), stride = Marshal.SizeOf(typeof(Row));
+                    if (count < 0 || count > (size - 4) / stride) return new Row[0];
+                    var rows = new Row[count];
+                    for (int i = 0; i < count; i++) rows[i] = (Row)Marshal.PtrToStructure(IntPtr.Add(data, 4 + i * stride), typeof(Row));
+                    return rows;
+                }
+                finally { Marshal.FreeHGlobal(data); }
             }
-            finally { Marshal.FreeHGlobal(data); }
+            return new Row[0];
         }
         internal static int Find(int sourcePort, int destinationPort)
         {
@@ -531,11 +544,84 @@ namespace DiscordAccess
                 if (r.state == 5 && r.localAddr == 0x0100007f && r.remoteAddr == 0x0100007f && Port(r.localPort) == sourcePort && Port(r.remotePort) == destinationPort) return (int)r.pid;
             return -1;
         }
-        internal static bool OwnsListener(Process process, int port)
+        // Readiness is separate from the per-request peer check in ExpectedBackend.
+        // A listener state of 0 (observed on Windows) is not treated as LISTEN.
+        // Instead, an empty TCP connection must have an ESTABLISHED server-side
+        // tuple owned by this still-live process. No auth or application bytes
+        // are sent by this probe, including to a port captured by another process.
+        internal static bool BackendReady(Process process, int port)
         {
-            if (process == null || process.HasExited) return false;
-            return Rows().Any(r => r.state == 2 && r.localAddr == 0x0100007f && Port(r.localPort) == port && r.pid == process.Id) && !process.HasExited;
+            if (process == null || process.HasExited || port < 1 || port > 65535) return false;
+            return Ready(Rows(), process.Id, port, () => ProbeOwner(process, port)) && !process.HasExited;
         }
+        private static bool Ready(Row[] rows, int pid, int port, Func<bool> probe)
+        {
+            var endpoints = rows.Where(r => r.localAddr == 0x0100007f && Port(r.localPort) == port && r.pid == pid).ToArray();
+            // Remote fields are undefined for documented LISTEN rows. For an
+            // unrecognized state, require an endpoint without a peer plus the
+            // independent established-connection proof.
+            return endpoints.Any(r => r.state == 2) ||
+                (endpoints.Any(r => r.remoteAddr == 0 && r.remotePort == 0) && probe());
+        }
+        private static bool ProbeOwner(Process process, int port)
+        {
+            try
+            {
+                using (var client = new TcpClient())
+                {
+                    Task connected = client.ConnectAsync(IPAddress.Loopback, port);
+                    if (!connected.Wait(200)) return false;
+                    connected.GetAwaiter().GetResult();
+                    var local = client.Client.LocalEndPoint as IPEndPoint;
+                    if (local == null || !local.Address.Equals(IPAddress.Loopback)) return false;
+                    for (int attempt = 0; attempt < 4; attempt++)
+                    {
+                        if (process.HasExited) return false;
+                        int owner = Find(port, local.Port);
+                        if (owner > 0) return owner == process.Id && !process.HasExited;
+                        Thread.Sleep(10);
+                    }
+                }
+            }
+            catch { }
+            return false;
+        }
+#if TEST_BUILD
+        internal static int RunReadinessChecks()
+        {
+            int checks = 0, probes = 0;
+            Action<bool> require = ok => { if (!ok) throw new InvalidOperationException("Backend readiness ownership check failed."); checks++; };
+            Func<bool> refused = () => { probes++; return false; };
+            Func<bool> verified = () => { probes++; return true; };
+            var endpoint = new Row { state = 0, localAddr = 0x0100007f, localPort = 0x2f90, pid = 42 };
+            require(!Ready(new[] { endpoint }, 42, 36911, refused) && probes == 1);
+            require(Ready(new[] { endpoint }, 42, 36911, verified) && probes == 2);
+            require(!Ready(new[] { endpoint }, 43, 36911, verified) && probes == 2);
+            require(!Ready(new[] { endpoint }, 42, 36912, verified) && probes == 2);
+            endpoint.localAddr = 0;
+            require(!Ready(new[] { endpoint }, 42, 36911, verified) && probes == 2);
+            endpoint.localAddr = 0x0100007f; endpoint.remoteAddr = 0x0100007f;
+            require(!Ready(new[] { endpoint }, 42, 36911, verified) && probes == 2);
+            endpoint.remoteAddr = 0; endpoint.state = 2;
+            require(Ready(new[] { endpoint }, 42, 36911, refused) && probes == 2);
+            endpoint.remoteAddr = UInt32.MaxValue; endpoint.remotePort = UInt32.MaxValue;
+            require(Ready(new[] { endpoint }, 42, 36911, refused) && probes == 2);
+            require(!Ready(new Row[0], 42, 36911, verified) && probes == 2);
+            using (var process = Process.GetCurrentProcess())
+            {
+                var listener = new TcpListener(IPAddress.Loopback, 0);
+                listener.Start();
+                try
+                {
+                    int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+                    require(BackendReady(process, port));
+                    require(!BackendReady(process, ReserveEphemeralPort()));
+                }
+                finally { listener.Stop(); }
+            }
+            return checks;
+        }
+#endif
         internal static int ReserveEphemeralPort()
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);
