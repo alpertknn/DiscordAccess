@@ -349,7 +349,10 @@ namespace DiscordAccess
                 // every later recovery: the partial file cannot pass hash
                 // cleanup, and CreateNew cannot overwrite it. Give each retry
                 // its own staging file; preserve unknown bytes from old tries.
-                temporary = Sidecar(record, "restore-" + Guid.NewGuid().ToString("N") + ".lnk");
+                // Keep the legacy staging-name length so valid shortcut paths
+                // do not newly exceed Windows' path limit during recovery.
+                temporary = Path.Combine(Path.GetDirectoryName(record.Path),
+                    ".DiscordAccess-" + Guid.NewGuid().ToString("N") + "-restore.lnk");
                 temporaryHash = record.OriginalHash;
                 string backup = Sidecar(record, "restore.bak");
                 CleanupByHash(backup, record.InstalledHash);

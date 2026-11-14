@@ -158,9 +158,9 @@ static void InterruptedRestoreChecks(string root){
         Assert(interrupted.BoundCount==1,scenario+" fixture binds one real file");
         string entry=Directory.GetFiles(env.Journal,"*.json").Single();
         var record=json.Deserialize<Dictionary<string,object>>(File.ReadAllText(entry));
-        string suffix=scenario=="previous-attempt"||scenario=="locked-retry"
-            ? "restore-"+Guid.NewGuid().ToString("N")+".lnk" : "restore.lnk";
-        string stale=Path.Combine(desktop,".DiscordAccess-"+(string)record["Id"]+"-"+suffix);
+        string stagingId=scenario=="previous-attempt"||scenario=="locked-retry"
+            ? Guid.NewGuid().ToString("N") : (string)record["Id"];
+        string stale=Path.Combine(desktop,".DiscordAccess-"+stagingId+"-restore.lnk");
         byte[] staleBytes=scenario=="empty"||scenario=="user-edit" ? new byte[0]
             : scenario=="foreign" ? Encoding.UTF8.GetBytes("FOREIGN_STAGING_CANARY")
             : original.Take(original.Length/2).ToArray();
@@ -198,9 +198,46 @@ static void InterruptedRestoreChecks(string root){
         }
     }
 }
+static void LongRestorePathChecks(string root){
+    string fixture=Path.Combine(root,"long-restore"),desktopBase=Path.Combine(fixture,"Desktop"),
+        discord=Path.Combine(fixture,"Discord"),state=Path.Combine(fixture,"state"),exe=Path.Combine(fixture,"DiscordAccess.exe");
+    string id=new string('a',32),legacyName=".DiscordAccess-"+id+"-restore.lnk";
+    // Keep the original staging path within MAX_PATH while a second GUID in
+    // its filename would exceed it. Size the padding from the supplied root.
+    int padding=250-desktopBase.Length-2-legacyName.Length;
+    Assert(padding>0&&padding<256,"long-path fixture fits beneath supplied root");
+    string desktop=Path.Combine(desktopBase,new string('d',padding));
+    string legacyStage=Path.Combine(desktop,legacyName),longStage=Path.Combine(desktop,".DiscordAccess-"+id+"-restore-"+id+".lnk");
+    Assert(Safety.Under(desktop,root)&&legacyStage.Length==250&&longStage.Length>=260,"long-path fixture distinguishes same-length and expanded staging names");
+    foreach(string directory in new[]{desktop,discord,state})Directory.CreateDirectory(directory);
+    File.WriteAllText(exe,"fixture host");
+    string launcher=Path.Combine(discord,"Discord.exe"),link=Path.Combine(desktop,"Discord.lnk");
+    File.WriteAllText(launcher,"signed fixture launcher");
+    Link(link,launcher,"--processStart Discord.exe","");
+    byte[] original=File.ReadAllBytes(link);
+    var env=new DiscordShortcuts.EnvironmentPaths{
+        Journal=Path.Combine(state,"shortcut-session"),DiscordRoot=discord,Image=exe,
+        Locations=new[]{new DiscordShortcuts.Location(desktop,false)},Adapter=new Fake(),
+        PrepareState=delegate{},OwnedByUser=delegate{return true;}
+    };
+    Configure(env);
+    var interrupted=DiscordShortcuts.BindDirect(env,null,ProxyArgs);
+    Assert(interrupted.BoundCount==1,"near-MAX_PATH shortcut binds successfully");
+    string entry=Directory.GetFiles(env.Journal,"*.json").Single();
+    var record=json.Deserialize<Dictionary<string,object>>(File.ReadAllText(entry));
+    string stale=Path.Combine(desktop,".DiscordAccess-"+(string)record["Id"]+"-restore.lnk");
+    File.WriteAllBytes(stale,new byte[0]);
+    DiscordShortcuts.Recover(env,null);
+    Assert(File.ReadAllBytes(link).SequenceEqual(original),"near-MAX_PATH interrupted restore restores original bytes");
+    Assert(!File.Exists(entry)&&!DiscordShortcuts.Pending(env),"near-MAX_PATH interrupted restore retires active journal");
+    Assert(File.Exists(stale)&&new FileInfo(stale).Length==0,"near-MAX_PATH interrupted staging remains preserved");
+    Assert(Directory.GetFiles(desktop,".DiscordAccess-*").Length==1,"near-MAX_PATH recovery leaves no additional staging");
+    interrupted.Dispose();
+}
 public static int Main(string[] args){
 string root=Path.GetFullPath(args[0]); Directory.CreateDirectory(root);
 InterruptedRestoreChecks(root);
+LongRestorePathChecks(root);
 RootLauncherChecks(root);
 CustomRootChecks(root);
 RootRecoveryPolicyChecks(root);
