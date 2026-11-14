@@ -4,9 +4,9 @@
 
 <h1 align="center">DiscordAccess</h1>
 
-A connection helper for the official Discord Stable desktop app you already have installed. It lets Discord reach its servers through a local, Discord-only proxy and a hash-pinned DoH engine. On Windows it runs as a system tray app; on macOS it runs as a native menu bar app (pre-release). The interface is in English; the current Windows release, v4.22, still shows it in Turkish.
+A connection helper for the official Discord Stable desktop app you already have installed. It lets Discord reach its servers through a local, Discord-only proxy and a hash-pinned DoH engine. On Windows it runs as a system tray app; on macOS it runs as a native menu bar app (pre-release). The interface is in English.
 
-**v4.22** (Windows) fixes Windows startup setup that failed because of desktop or Downloads folder permissions: it now uses a safe personal copy of the package. It keeps existing file permissions and respects a user's choice to turn startup off.
+**v4.23.1** (Windows) fixes launches blocked by an empty or partially written shortcut restore file after a Windows restart. Recovery uses a fresh temporary file on each attempt, preserving unknown files and user changes. It retains the connection startup improvements from v4.23 and the existing startup preferences.
 
 `DiscordAccess.exe` prepares the connection; you open Discord from your own desktop or Start menu shortcut. The shortcut's real Discord target is kept; only the session's local proxy arguments are added. No separate Discord or profile copy is created; your existing account is used. No open CMD window is needed.
 
@@ -16,14 +16,14 @@ Every ready-to-run package is on the [latest release page](https://github.com/al
 
 | Your computer | Download this | Then |
 | --- | --- | --- |
-| Windows 10/11 x64 with .NET Framework 4.8 | **DiscordAccess-v4.22.zip** | Extract the whole ZIP into a short, permanent folder and open `DiscordAccess.exe`. |
+| Windows 10/11 x64 with .NET Framework 4.8 | **DiscordAccess-v4.23.1.zip** | Extract the whole ZIP into a short, permanent folder and open `DiscordAccess.exe`. |
 | Mac with Apple Silicon (M1 or later), macOS 13 or newer | **DiscordAccess-macos-v0.3-installer.zip** | Extract it and open `DiscordAccess-macos-v0.3-Installer.pkg`. |
 
 Everything else on the release page is optional. `SHA256SUMS.txt` only checks the two downloads, and GitHub's automatic **Source code (zip)** and **Source code (tar.gz)** entries contain only the source code, not the program. The engine source packages are published with the releases that introduced each engine, [v4.22](https://github.com/alpertknn/DiscordAccess/releases/tag/v4.22) for Windows and [macos-v0.2](https://github.com/alpertknn/DiscordAccess/releases/tag/macos-v0.2) for macOS; you do not need them to run the program.
 
 ## Download the Windows package
 
-Download **DiscordAccess-v4.22.zip** from the [latest combined release](https://github.com/alpertknn/DiscordAccess/releases/tag/macos-v0.3). This is the unchanged Windows v4.22 package from the [original v4.22 release and source tag](https://github.com/alpertknn/DiscordAccess/releases/tag/v4.22); the new tag adds macOS changes and does not rebuild the Windows executable.
+Download **DiscordAccess-v4.23.1.zip** from the [v4.23.1 combined release](https://github.com/alpertknn/DiscordAccess/releases/tag/v4.23.1). The Windows executable is built from the [v4.23.1 source tag](https://github.com/alpertknn/DiscordAccess/tree/v4.23.1); its engine is unchanged from v4.22.
 
 `DiscordAccess-v4.22-engine-source.zip`, published with the [v4.22 release](https://github.com/alpertknn/DiscordAccess/releases/tag/v4.22), contains the engine's corresponding source and rebuild materials; you do not need it to run the program. If you redistribute the ready-made package, also provide this source package and the license notices. Old release tags are kept for source history; do not redistribute earlier binary packages that had incomplete notices.
 
@@ -33,11 +33,11 @@ The package's [usage notes](docs/README.txt) are also in the repository.
 
 **Code > Download ZIP** on GitHub and the **Source code** files under Releases contain only source code; they do not include the program EXE or the engine. If you want to use them for development, first complete the steps in "Building from source (Windows)"; for macOS, see [macos/README.md](macos/README.md). [All releases](https://github.com/alpertknn/DiscordAccess/releases).
 
-You can compute the SHA-256 of the downloaded ZIP with `Get-FileHash .\DiscordAccess-v4.22.zip -Algorithm SHA256` and compare it with `SHA256SUMS.txt` in the same release. The hash file does not provide a code signature.
+You can compute the SHA-256 of the downloaded ZIP with `Get-FileHash .\DiscordAccess-v4.23.1.zip -Algorithm SHA256` and compare it with `SHA256SUMS.txt` in the same release. The hash file does not provide a code signature.
 
 ## macOS pre-release (Apple Silicon)
 
-Download **DiscordAccess-macos-v0.3-installer.zip** from the [latest combined release](https://github.com/alpertknn/DiscordAccess/releases/tag/macos-v0.3). Extract it and open `DiscordAccess-macos-v0.3-Installer.pkg`.
+Download **DiscordAccess-macos-v0.3-installer.zip** from the [v4.23.1 combined release](https://github.com/alpertknn/DiscordAccess/releases/tag/v4.23.1). This installer retains the exact bytes and [source tag of macos-v0.3](https://github.com/alpertknn/DiscordAccess/tree/macos-v0.3). Extract it and open `DiscordAccess-macos-v0.3-Installer.pkg`.
 
 - Runs only on Apple Silicon Macs. The v0.3 build was made on macOS 27; no test suite or live Discord session was run for this release build.
 - The installer places the app in `/Applications`. Quit any older running DiscordAccess before installation.
@@ -100,7 +100,7 @@ Two independent `Run` entries do not guarantee a startup order, so the connectio
 
 Do not move the package while the connection is active. If you want to move to another folder while startup is enabled, first turn off **Start with Windows** in the tray, then turn it on again in the new permanent folder. If long startup commands hit Windows' 260-character limit, use a shorter folder for the package.
 
-No automatic startup entry is created if other standard users can write to the package file or any of its parent folders. When v4.22 is opened manually from such a location, it copies the package to `%USERPROFILE%\DiscordAccess\packages\<app-hash>` and restarts from the verified EXE. Only the app, the hash-pinned engine and the package's three usage/license/source texts are copied; no profile, settings, logs or other files are moved. The source package stays where it is, and the permissions of existing files and folders are not changed. Later manual launches use the personal copy with the same content.
+No automatic startup entry is created if other standard users can write to the package file or any of its parent folders. A normal manual launch from such a location copies the package to `%USERPROFILE%\DiscordAccess\packages\<app-hash>` and restarts from the verified EXE. Only the app, the hash-pinned engine and the package's three usage/license/source texts are copied; no profile, settings, logs or other files are moved. The source package stays where it is, and the permissions of existing files and folders are not changed. Later manual launches use the personal copy with the same content.
 
 The user folder and all parent folders of the installation are also verified. Installation is refused for an unsafe user folder, a junction/symlink, a different existing file, or a missing or wrong engine; the security check is never skipped. Windows startup, rollback, console mode and the Discord launch shortcut do not create a new installation. A previously disabled **Start with Windows** preference is kept; turn it on again from the tray in the new location if you want.
 
@@ -129,6 +129,8 @@ Attachment downloads inside Discord remain supported. Temporary support is added
 
 ## Rollback and updates (Windows)
 
+If an earlier version reports that shortcut restore could not be completed after a Windows restart, fully close Discord and open v4.23.1 normally. It can recover the existing shortcut record even when an interrupted restore left an empty or partial temporary file. The recovery record does not need to be deleted.
+
 If DiscordAccess is closed while Discord is still open, a recovery record may remain. Fully close Discord and run the command below, or restart the connection:
 
 ```powershell
@@ -145,7 +147,7 @@ Logs are in `%LOCALAPPDATA%\DiscordAccess\v3`. Do not move the package folder wh
 
 ## Development
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for building, tests and the contribution workflow, [CHANGELOG.md](CHANGELOG.md) for release changes, and the [security notes](docs/SECURITY-NOTES.md) for trust boundaries. Release steps are in [RELEASING.md](docs/RELEASING.md). v4.22 does not change the existing official Discord/profile/network flow. Logs, account/profile files and local test output are not included in the repository.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for building, tests and the contribution workflow, [CHANGELOG.md](CHANGELOG.md) for release changes, and the [security notes](docs/SECURITY-NOTES.md) for trust boundaries. Release steps are in [RELEASING.md](docs/RELEASING.md). v4.23.1 changes shortcut recovery; the official Discord target, existing profile and connection flow are unchanged. Logs, account/profile files and local test output are not included in the repository.
 
 For normal bugs, use the [Issues](https://github.com/alpertknn/DiscordAccess/issues) template; include the program version, your Windows or macOS version, what you did and the short error code. Read the [SECURITY.md](SECURITY.md) policy before writing about a security issue in a public issue or PR. Do not share your Discord profile, the recovery `journal.json` file, account tokens or signed attachment links. If local logs contain personal paths, remove those parts before sharing.
 

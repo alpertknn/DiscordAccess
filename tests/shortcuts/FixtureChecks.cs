@@ -137,8 +137,70 @@ var foreign=DiscordShortcuts.BindDirect(env,logs.Add,ProxyArgs);Link(observed,Pa
 var badSignature=DiscordShortcuts.BindDirect(env,logs.Add,ProxyArgs);Link(observed,launcher,"",",0");byte[] unverifiedReplacement=File.ReadAllBytes(observed);adapter.RejectedImage=launcher;quietLogs=logs.Count;Assert(badSignature.RefreshOfficialReplacements()==0,"active unverified official-name replacement not rebound");Assert(File.ReadAllBytes(observed).SequenceEqual(unverifiedReplacement)&&logs.Count==quietLogs,"failed verification preserves active link silently");badSignature.Dispose();adapter.RejectedImage=null;Assert(File.ReadAllBytes(observed).SequenceEqual(unverifiedReplacement),"unverified official-name replacement untouched");Assert(Directory.GetFiles(env.Journal,"*.conflict").Length==2,"unverified replacement retains journal for inspection");File.WriteAllBytes(observed,original[observed]);
 File.Delete(launcher);using(var rejected=DiscordShortcuts.BindDirect(env,logs.Add,ProxyArgs)){Assert(rejected.BoundCount==0,"unverified root launcher rejected");Assert(File.ReadAllBytes(observed).SequenceEqual(original[observed]),"failed root image verification does not alter link");}
 }
+static void InterruptedRestoreChecks(string root){
+    foreach(string scenario in new[]{"empty", "partial", "foreign", "previous-attempt", "locked-retry", "user-edit"}){
+        string fixture=Path.Combine(root,"interrupted-restore-"+scenario),desktop=Path.Combine(fixture,"Desktop"),
+            discord=Path.Combine(fixture,"Discord"),state=Path.Combine(fixture,"state"),exe=Path.Combine(fixture,"DiscordAccess.exe");
+        foreach(string directory in new[]{desktop,discord,state})Directory.CreateDirectory(directory);
+        File.WriteAllText(exe,"fixture host");
+        string launcher=Path.Combine(discord,"Discord.exe"),link=Path.Combine(desktop,"Discord.lnk");
+        File.WriteAllText(launcher,"signed fixture launcher");
+        Link(link,launcher,"--processStart Discord.exe","original.ico,0");
+        byte[] original=File.ReadAllBytes(link);
+        var logs=new List<string>();
+        var env=new DiscordShortcuts.EnvironmentPaths{
+            Journal=Path.Combine(state,"shortcut-session"),DiscordRoot=discord,Image=exe,
+            Locations=new[]{new DiscordShortcuts.Location(desktop,false)},Adapter=new Fake(),
+            PrepareState=delegate{},OwnedByUser=delegate{return true;}
+        };
+        Configure(env);
+        var interrupted=DiscordShortcuts.BindDirect(env,logs.Add,ProxyArgs);
+        Assert(interrupted.BoundCount==1,scenario+" fixture binds one real file");
+        string entry=Directory.GetFiles(env.Journal,"*.json").Single();
+        var record=json.Deserialize<Dictionary<string,object>>(File.ReadAllText(entry));
+        string suffix=scenario=="previous-attempt"||scenario=="locked-retry"
+            ? "restore-"+Guid.NewGuid().ToString("N")+".lnk" : "restore.lnk";
+        string stale=Path.Combine(desktop,".DiscordAccess-"+(string)record["Id"]+"-"+suffix);
+        byte[] staleBytes=scenario=="empty"||scenario=="user-edit" ? new byte[0]
+            : scenario=="foreign" ? Encoding.UTF8.GetBytes("FOREIGN_STAGING_CANARY")
+            : original.Take(original.Length/2).ToArray();
+        File.WriteAllBytes(stale,staleBytes);
+        byte[] installed=File.ReadAllBytes(link);
+        if(scenario=="locked-retry"){
+            // Reads remain possible, but Windows must reject File.Replace while
+            // another reader denies delete sharing. Each retry must stay safe.
+            using(var held=new FileStream(link,FileMode.Open,FileAccess.Read,FileShare.Read)){
+                for(int attempt=0;attempt<2;attempt++){
+                    DiscordShortcuts.Recover(env,logs.Add);
+                    Assert(File.Exists(entry)&&DiscordShortcuts.Pending(env),"locked restore retains active journal on attempt "+attempt);
+                    Assert(File.ReadAllBytes(link).SequenceEqual(installed),"locked restore preserves installed shortcut on attempt "+attempt);
+                    Assert(File.ReadAllBytes(stale).SequenceEqual(staleBytes),"locked restore preserves interrupted staging on attempt "+attempt);
+                    Assert(Directory.GetFiles(desktop,".DiscordAccess-*").Length==1,"failed restore cleans only its complete staging on attempt "+attempt);
+                }
+            }
+        }
+        byte[] userEdit=Encoding.UTF8.GetBytes("USER_CHANGED_SHORTCUT_CANARY");
+        if(scenario=="user-edit")File.WriteAllBytes(link,userEdit);
+        DiscordShortcuts.Recover(env,logs.Add);
+        Assert(File.ReadAllBytes(link).SequenceEqual(scenario=="user-edit"?userEdit:original),scenario+" recovery preserves correct shortcut bytes");
+        Assert(!File.Exists(entry)&&!DiscordShortcuts.Pending(env),scenario+" interrupted staging does not strand active recovery");
+        Assert(File.Exists(stale)&&File.ReadAllBytes(stale).SequenceEqual(staleBytes),scenario+" unknown staging bytes retained exactly");
+        Assert(Directory.GetFiles(desktop,".DiscordAccess-*").Length==1,scenario+" successful recovery leaves only the preserved old staging");
+        if(scenario=="user-edit")Assert(Directory.GetFiles(env.Journal,"*.conflict").Length==1,"user edit keeps original journal as conflict");
+        DiscordShortcuts.Recover(env,logs.Add);
+        Assert(File.ReadAllBytes(link).SequenceEqual(scenario=="user-edit"?userEdit:original)&&
+            File.ReadAllBytes(stale).SequenceEqual(staleBytes),scenario+" subsequent recovery remains idempotent");
+        interrupted.Dispose();
+        if(scenario!="user-edit"){
+            using(var nextSession=DiscordShortcuts.BindDirect(env,logs.Add,ProxyArgs))
+                Assert(nextSession.BoundCount==1,scenario+" preserved staging is not discovered as a new shortcut");
+            Assert(File.ReadAllBytes(link).SequenceEqual(original)&&!DiscordShortcuts.Pending(env),scenario+" next connection and clean shutdown still restore");
+        }
+    }
+}
 public static int Main(string[] args){
 string root=Path.GetFullPath(args[0]); Directory.CreateDirectory(root);
+InterruptedRestoreChecks(root);
 RootLauncherChecks(root);
 CustomRootChecks(root);
 RootRecoveryPolicyChecks(root);

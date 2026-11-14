@@ -1,4 +1,4 @@
-DiscordAccess v4.22 — Windows x64 package
+DiscordAccess v4.23.1 — Windows x64 package
 
 Extract the entire ZIP into a short, permanent local folder. DiscordAccess.exe
 and engine/sing-box.exe must stay in the same package. Baslat.cmd was removed.
@@ -66,7 +66,7 @@ again in the new location. If long startup commands hit the Windows 260
 character limit, choose a shorter permanent folder. The startup preference
 belongs only to that Windows user.
 
-v4.22 personal installation:
+Personal installation (since v4.22):
 If other standard users can write to the desktop/download package, a normal
 manual launch copies the package under
 %USERPROFILE%\DiscordAccess\packages\<app-hash> and
@@ -113,6 +113,13 @@ The EXE, updater and app.asar/core.asar are not changed. Temporary download
 support is prepared in the recognized module entry, along with only two update
 endpoints in settings.json. The user's other preferences are kept on restore.
 
+Shortcut recovery after a Windows restart:
+v4.23.1 fixes the launch error caused by an empty or partially written shortcut
+restore file. Fully close Discord and open this version normally; it recovers
+the existing shortcut record using a new temporary file for each attempt.
+There is no need to delete the recovery record. Unknown temporary file contents
+and user changes to the actual shortcut are preserved.
+
 Logs: %LOCALAPPDATA%\DiscordAccess\v3
 Startup recovery: startup-session\journal.json (personal data; do not share).
 Requires Windows 10/11 x64, .NET Framework 4.8 and a writable official Discord
@@ -140,12 +147,15 @@ development environment. A blocked EXE is not opened by another method;
 security settings are not changed. The completed checks and commit details are
 stated in the related PR. Messages/files/streaming with a real account, Windows
 restarts and tray interaction are separate from these automated tests.
-These user tests have not yet been completed for this version.
+A user confirmed that Windows restart and normal launch succeeded with a local
+build containing this same shortcut recovery fix. This is separate from the
+automated checks; it does not establish messaging, file transfer or streaming
+coverage for the final release build.
 
-v4.22 fixes the Windows startup location with a secure personal package copy;
-the official Discord, existing profile and connection flow do not change. Old
-source tags are kept; do not redistribute old binary packages with incomplete
-notices.
+v4.23.1 fixes interrupted shortcut recovery and retains v4.23's connection
+startup improvements. The engine, official Discord target, existing profile
+and connection flow do not change. Old source tags are kept; do not
+redistribute old binary packages with incomplete notices.
 
 The app's own code is MIT-licensed. The GPL-3.0-or-later terms of the engine
 code derived from upstream and the native components' own licenses are kept.
