@@ -2,6 +2,18 @@
 
 This file is a short summary of the verified source history. Full source versions are kept in Git tags; package and verification details are in the corresponding release notes. Real-account use, voice/streaming, tray interaction and Windows restarts are evaluated separately from synthetic tests.
 
+## v4.23.1 (Windows)
+
+- Recover shortcuts after Windows interrupts a restore staging write. Each retry uses a fresh temporary file, so an empty or partially written file from shutdown cannot block later launches. Existing shortcut validation and conflict protection are retained; unknown staging contents are preserved.
+- Added regression checks for empty, truncated and foreign temporary files, interrupted attempts, locked-file retries, preserved user changes and later sessions. A user separately confirmed a successful Windows restart and launch with a local build containing the same fix; this is not a claim of messaging, file-transfer or streaming coverage for the final release build.
+- Retain v4.23's connection startup fixes and the unchanged `1.14.3-discordaccess.2` engine. The combined release includes the unchanged macOS v0.3 installer; corresponding engine sources remain with Windows v4.22 and macos-v0.2.
+
+## v4.23 (Windows)
+
+- Verify an established connection to the owned engine when Windows reports an unrecognized TCP listener state, and retry changing TCP tables and delayed owner observations. Per-request ownership checks remain in place before credentials are sent.
+- Temporarily use AboveNormal scheduling priority during sign-in connection preparation, then restore the previous priority. Windows still controls startup ordering.
+- Keep the engine and macOS v0.3 installer unchanged.
+
 ## Unreleased (macOS)
 
 - Keep the connection when Discord updates itself during a session: Discord.app is watched, and the Discord that ShipIt reopens without the proxy is quit, moved to the new version's profile and opened again through the connection. Open Discord after a manual quit follows the update as before.

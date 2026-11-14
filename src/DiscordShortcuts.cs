@@ -301,6 +301,7 @@ namespace DiscordAccess
         private static void RestoreRecord(EnvironmentPaths paths, string entry, Action<string> log)
         {
             string inspection = null;
+            string temporary = null, temporaryHash = null;
             try
             {
                 if (!File.Exists(entry)) return;
@@ -343,9 +344,17 @@ namespace DiscordAccess
                     CleanupRecord(record);
                     ArchiveConflict(paths, entry, log); return;
                 }
-                string temporary = Sidecar(record, "restore.lnk");
+                // Windows can end the process after CreateNew but before the
+                // staging bytes are flushed. A fixed name would then block
+                // every later recovery: the partial file cannot pass hash
+                // cleanup, and CreateNew cannot overwrite it. Give each retry
+                // its own staging file; preserve unknown bytes from old tries.
+                // Keep the legacy staging-name length so valid shortcut paths
+                // do not newly exceed Windows' path limit during recovery.
+                temporary = Path.Combine(Path.GetDirectoryName(record.Path),
+                    ".DiscordAccess-" + Guid.NewGuid().ToString("N") + "-restore.lnk");
+                temporaryHash = record.OriginalHash;
                 string backup = Sidecar(record, "restore.bak");
-                CleanupByHash(temporary, record.OriginalHash);
                 CleanupByHash(backup, record.InstalledHash);
                 WriteNew(temporary, original);
                 if (!ReplaceIfHash(paths, record.Path, temporary, backup, record.InstalledHash, record.OriginalHash))
@@ -360,7 +369,11 @@ namespace DiscordAccess
             {
                 if (log != null) log("The recovery record of a Discord shortcut was kept; the automatic restore could not be completed (" + ex.GetType().Name + ").");
             }
-            finally { if (inspection != null) DeletePlain(inspection); }
+            finally
+            {
+                if (temporary != null) CleanupByHash(temporary, temporaryHash);
+                if (inspection != null) DeletePlain(inspection);
+            }
         }
 
         private static bool KeepOfficialReplacement(EnvironmentPaths paths, Record record, string entry, string expectedHash, Action<string> log)

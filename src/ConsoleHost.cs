@@ -81,7 +81,7 @@ namespace DiscordAccess
             if (args.Any(arg => arg == "--help" || arg == "-h" || arg == "/?")) { Help(); return 0; }
             if (args.Any(arg => arg != "--connect" && arg != "--start" && !DnsOptions.IsArgument(arg)))
             { WriteConsole("Unrecognized option. Type --help for usage."); return 64; }
-            try { Console.OutputEncoding = new UTF8Encoding(false); Console.Title = "DiscordAccess v4.21"; } catch { }
+            try { Console.OutputEncoding = new UTF8Encoding(false); Console.Title = "DiscordAccess v4.23.1"; } catch { }
             using (var output = new ConsoleOutput(SessionLog.Write, WriteConsole))
             using (var state = new SessionState())
             using (var launchSignal = ManualLaunchSignal.Listen(() => state.Command("A")))
@@ -92,7 +92,7 @@ namespace DiscordAccess
                     try { state.Startup(startupIntent); }
                     catch (Exception error) { SessionLog.Write("Automatic console launch: " + SafeError(error)); }
                 });
-                output.Show("DiscordAccess v4.21 | Connecting...");
+                output.Show("DiscordAccess v4.23.1 | Connecting...");
                 var controller = new Controller(output.File, (active, message) =>
                 {
                     state.StateChanged(active);
@@ -612,7 +612,7 @@ namespace DiscordAccess
         }
         private static void Help()
         {
-            WriteConsole("DiscordAccess v4.21 — system tray and command line");
+            WriteConsole("DiscordAccess v4.23.1 — system tray and command line");
             WriteConsole("DiscordAccess.exe                 Keeps the connection ready in the system tray; leaves no CMD open.");
             WriteConsole("DiscordAccess.exe --console       Opens the earlier Q / T / D console.");
             WriteConsole("--tray                           System tray mode (default).");
